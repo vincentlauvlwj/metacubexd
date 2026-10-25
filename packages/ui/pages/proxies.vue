@@ -23,6 +23,7 @@ import {
   IconX,
 } from '@tabler/icons-vue'
 import byteSize from 'byte-size'
+import dayjs from 'dayjs'
 import Button from '~/components/Button.vue'
 import ConnectivityBoard from '~/components/ConnectivityBoard.vue'
 import ProxyNodeCard from '~/components/ProxyNodeCard.vue'
@@ -31,6 +32,7 @@ import ProxyNodePreview from '~/components/ProxyNodePreview.vue'
 import ProxyNodeTableRow from '~/components/ProxyNodeTableRow.vue'
 import SubscriptionInfo from '~/components/SubscriptionInfo.vue'
 import { useBatchLatencyTest } from '~/composables/useBatchLatencyTest'
+import { useProxyProviderSubscriptions } from '~/composables/useProxyProviderSubscriptions'
 import {
   MOBILE_NAV_RESELECT_EVENT,
   PROXIES_DISPLAY_MODE,
@@ -63,6 +65,10 @@ const {
 } = useBatchLatencyTest()
 
 const activeTab = ref<'proxies' | 'proxyProviders'>('proxies')
+const providerSubscriptions = useProxyProviderSubscriptions(
+  () => proxiesStore.proxyProviders.map((provider) => provider.name),
+  () => activeTab.value === 'proxyProviders',
+)
 const settingsModal = ref<{ open: () => void; close: () => void }>()
 const subscriptionModal = ref<{ open: () => void; close: () => void }>()
 const subscriptionProviderName = ref('')
@@ -70,21 +76,15 @@ const subscriptionUrl = ref('')
 
 function openSubscriptionModal(providerName: string) {
   subscriptionProviderName.value = providerName
-  subscriptionUrl.value =
-    localStorage.getItem(`proxy-provider-subscription-url:${providerName}`) ??
-    ''
+  subscriptionUrl.value = providerSubscriptions.getUrl(providerName)
   subscriptionModal.value?.open()
 }
 
 function saveSubscriptionUrl() {
-  const url = subscriptionUrl.value.trim()
-  const key = `proxy-provider-subscription-url:${subscriptionProviderName.value}`
-
-  if (url) {
-    localStorage.setItem(key, url)
-  } else {
-    localStorage.removeItem(key)
-  }
+  providerSubscriptions.saveUrl(
+    subscriptionProviderName.value,
+    subscriptionUrl.value,
+  )
   subscriptionModal.value?.close()
 }
 
@@ -649,6 +649,14 @@ const ProxyProviderTitle = defineComponent({
     sortedProxyNames: { type: Array as () => string[], required: true },
   },
   setup(props) {
+    const subscriptionInfo = computed(() =>
+      providerSubscriptions.infoByProvider.get(props.provider.name),
+    )
+    const subscriptionExpiry = computed(() => {
+      const expire = subscriptionInfo.value?.Expire
+      return expire ? dayjs(expire * 1000).format('YYYY-MM-DD') : t('noExpire')
+    })
+
     return () =>
       h('div', { class: 'flex flex-col gap-3 flex-1 min-w-0' }, [
         h(
@@ -659,32 +667,51 @@ const ProxyProviderTitle = defineComponent({
           [
             h(
               'div',
-              { class: 'flex flex-wrap items-center gap-2 flex-1 min-w-0' },
+              {
+                class:
+                  'flex flex-wrap items-center gap-x-6 gap-y-2 flex-1 min-w-0',
+              },
               [
                 h(
-                  'span',
-                  {
-                    class:
-                      'text-lg font-semibold tracking-tight line-clamp-1 break-all text-base-content',
-                  },
-                  props.provider.name,
-                ),
-                h(
                   'div',
                   {
                     class:
-                      'badge badge-sm text-[0.7rem] font-semibold px-2 py-1 rounded-md bg-primary/12 text-primary border border-primary/20',
+                      'flex max-w-full min-w-0 flex-wrap items-center gap-2',
                   },
-                  props.provider.proxies.length,
+                  [
+                    h(
+                      'span',
+                      {
+                        class:
+                          'text-lg font-semibold tracking-tight line-clamp-1 break-all text-base-content',
+                      },
+                      props.provider.name,
+                    ),
+                    h(
+                      'div',
+                      {
+                        class:
+                          'badge badge-sm text-[0.7rem] font-semibold px-2 py-1 rounded-md bg-primary/12 text-primary border border-primary/20',
+                      },
+                      props.provider.proxies.length,
+                    ),
+                    h(
+                      'div',
+                      {
+                        class:
+                          'badge badge-sm text-[0.7rem] font-semibold px-2 py-1 rounded-md bg-primary/12 text-primary border border-primary/20',
+                      },
+                      props.provider.vehicleType,
+                    ),
+                  ],
                 ),
-                h(
-                  'div',
-                  {
-                    class:
-                      'badge badge-sm text-[0.7rem] font-semibold px-2 py-1 rounded-md bg-primary/12 text-primary border border-primary/20',
-                  },
-                  props.provider.vehicleType,
-                ),
+                subscriptionInfo.value &&
+                  h('div', { class: 'w-[200px] max-w-full shrink-0' }, [
+                    h(SubscriptionInfo, {
+                      compact: true,
+                      subscriptionInfo: subscriptionInfo.value,
+                    }),
+                  ]),
               ],
             ),
             h('div', { class: 'flex items-center gap-1.5 shrink-0' }, [
@@ -756,17 +783,23 @@ const ProxyProviderTitle = defineComponent({
             ]),
           ],
         ),
-        h(SubscriptionInfo, {
-          subscriptionInfo: props.provider.subscriptionInfo,
-        }),
         h('div', { class: 'flex flex-col gap-2.5 pt-1' }, [
           h(
             'div',
             {
               class:
-                'inline-flex items-center gap-1.5 text-xs font-medium text-base-content/45 px-2.5 py-1 bg-base-content/5 rounded-full w-fit',
+                'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4 text-base-content/45',
             },
-            `${t('updated')} ${formatTimeFromNow(props.provider.updatedAt, locale.value)}`,
+            [
+              h(
+                'span',
+                `${t('updated')} ${formatTimeFromNow(props.provider.updatedAt, locale.value)}`,
+              ),
+              subscriptionInfo.value &&
+                h('span', { 'aria-hidden': 'true' }, '·'),
+              subscriptionInfo.value &&
+                h('span', `${t('expire')}: ${subscriptionExpiry.value}`),
+            ],
           ),
           !proxiesStore.collapsedMap[props.provider.name] &&
             h(ProxyNodePreview, {
