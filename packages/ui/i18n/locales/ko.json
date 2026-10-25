@@ -654,5 +654,11 @@
   "visualEditorDiagnostics": "설정 진단",
   "visualEditorManaged": "관리됨",
   "quality": "품질",
-  "sortDefault": "기본"
+  "sortDefault": "기본",
+  "providerSubscriptionEditorTitle": "{name} 구독 노드 편집",
+  "providerSubscriptionEditorHint": "구독 노드를 편집합니다. 저장하면 노드 설정만 포함된 YAML이 브라우저 콘솔에 출력됩니다.",
+  "providerSubscriptionExported": "노드 YAML이 브라우저 콘솔에 출력되었습니다",
+  "providerSubscriptionNodes": "구독 노드",
+  "providerSubscriptionInvalid": "구독에는 노드 설정 객체로 구성된 proxies 배열이 있어야 합니다.",
+  "providerSubscriptionTimeout": "구독 다운로드 시간이 초과되었습니다. 다시 시도하세요."
 }

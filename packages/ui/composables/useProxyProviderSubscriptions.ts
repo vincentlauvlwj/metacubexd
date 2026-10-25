@@ -1,7 +1,7 @@
 import type { SubscriptionInfo } from '~/types'
 import { onScopeDispose, reactive, watch } from 'vue'
 
-const SUBSCRIPTION_PROXY_BASE = 'http://clash.home.liuwj.me/subscription/'
+import { toSubscriptionProxyUrl } from '~/utils/subscriptionProxy'
 const urlKey = (name: string) => `proxy-provider-subscription-url:${name}`
 const cacheKey = (name: string) => `proxy-provider-subscription-info:${name}`
 const fields = {
@@ -10,24 +10,6 @@ const fields = {
   total: 'Total',
   expire: 'Expire',
 } as const
-
-function toProxyUrl(url: string): string {
-  const subscription = new URL(url)
-  if (!['http:', 'https:'].includes(subscription.protocol)) {
-    throw new Error('Unsupported subscription URL protocol')
-  }
-
-  const proxy = new URL(SUBSCRIPTION_PROXY_BASE)
-  // Existing manually configured proxy links must not be wrapped again.
-  if (
-    subscription.host === proxy.host &&
-    subscription.pathname.startsWith(proxy.pathname)
-  ) {
-    return `${subscription.origin}${subscription.pathname}${subscription.search}`
-  }
-
-  return `${SUBSCRIPTION_PROXY_BASE}${subscription.host}${subscription.pathname}${subscription.search}`
-}
 
 function parseUserinfo(header: string | null): SubscriptionInfo | undefined {
   if (!header) return
@@ -71,6 +53,7 @@ export function useProxyProviderSubscriptions(
   isActive: () => boolean,
 ) {
   const infoByProvider = reactive(new Map<string, SubscriptionInfo>())
+  const configuredProviders = reactive(new Set<string>())
   const requests = new Map<string, AbortController>()
 
   function getUrl(name: string): string {
@@ -81,6 +64,15 @@ export function useProxyProviderSubscriptions(
     }
   }
 
+  function syncConfigured(name: string) {
+    if (getUrl(name)) configuredProviders.add(name)
+    else configuredProviders.delete(name)
+  }
+
+  watch(providerNames, (names) => names.forEach(syncConfigured), {
+    immediate: true,
+  })
+
   function cancelRequest(name: string) {
     requests.get(name)?.abort()
     requests.delete(name)
@@ -89,6 +81,7 @@ export function useProxyProviderSubscriptions(
   async function refreshProvider(name: string) {
     cancelRequest(name)
     const url = getUrl(name)
+    syncConfigured(name)
     const cached = url ? readCache(name, url) : undefined
     if (cached) infoByProvider.set(name, cached)
     else infoByProvider.delete(name)
@@ -100,7 +93,7 @@ export function useProxyProviderSubscriptions(
     try {
       // Proxy only the request. Configuration and cache identity retain the
       // original subscription URL. Do not forward dashboard credentials.
-      const response = await fetch(toProxyUrl(url), {
+      const response = await fetch(toSubscriptionProxyUrl(url), {
         signal: controller.signal,
         cache: 'no-store',
         credentials: 'omit',
@@ -136,6 +129,7 @@ export function useProxyProviderSubscriptions(
     const previousUrl = getUrl(name)
     if (url) localStorage.setItem(urlKey(name), url)
     else localStorage.removeItem(urlKey(name))
+    syncConfigured(name)
 
     cancelRequest(name)
     if (!url || url !== previousUrl) {
@@ -164,5 +158,11 @@ export function useProxyProviderSubscriptions(
     for (const name of requests.keys()) cancelRequest(name)
   })
 
-  return { infoByProvider, getUrl, saveUrl, refreshProvider }
+  return {
+    infoByProvider,
+    getUrl,
+    hasUrl: (name: string) => configuredProviders.has(name),
+    saveUrl,
+    refreshProvider,
+  }
 }

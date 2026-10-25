@@ -654,5 +654,11 @@
   "visualEditorDiagnostics": "عیب‌یابی پیکربندی",
   "visualEditorManaged": "مدیریت‌شده",
   "quality": "کیفیت",
-  "sortDefault": "پیش‌فرض"
+  "sortDefault": "پیش‌فرض",
+  "providerSubscriptionEditorTitle": "ویرایش گره‌های اشتراک {name}",
+  "providerSubscriptionEditorHint": "گره‌های اشتراک را ویرایش کنید. هنگام ذخیره، YAML شامل فقط تنظیمات گره‌ها در کنسول مرورگر نمایش داده می‌شود.",
+  "providerSubscriptionExported": "YAML گره‌ها در کنسول مرورگر نمایش داده شد",
+  "providerSubscriptionNodes": "گره‌های اشتراک",
+  "providerSubscriptionInvalid": "اشتراک باید شامل آرایه proxies از اشیای تنظیمات گره باشد.",
+  "providerSubscriptionTimeout": "زمان دانلود اشتراک به پایان رسید. دوباره تلاش کنید."
 }

@@ -654,5 +654,11 @@
   "visualEditorDiagnostics": "設定の診断",
   "visualEditorManaged": "管理対象",
   "quality": "品質",
-  "sortDefault": "デフォルト"
+  "sortDefault": "デフォルト",
+  "providerSubscriptionEditorTitle": "{name} のサブスクリプションノードを編集",
+  "providerSubscriptionEditorHint": "ノードを編集します。保存すると、ノード設定のみの YAML がブラウザーのコンソールに出力されます。",
+  "providerSubscriptionExported": "ノードの YAML をブラウザーのコンソールに出力しました",
+  "providerSubscriptionNodes": "サブスクリプションノード",
+  "providerSubscriptionInvalid": "サブスクリプションには、ノード設定オブジェクトの proxies 配列が必要です。",
+  "providerSubscriptionTimeout": "ダウンロードがタイムアウトしました。再試行してください。"
 }

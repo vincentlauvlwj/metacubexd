@@ -23,13 +23,18 @@ import {
 
 type ResourceKind = 'proxy' | 'group'
 
+const props = defineProps<{ providerMode?: boolean }>()
 const emit = defineEmits<{
   saved: []
 }>()
 
 const { t } = useI18n()
 const router = useRouter()
-const editor = useProxyConfigEditor()
+const providerName = ref('')
+const subscriptionUrl = ref('')
+const editor = useProxyConfigEditor(
+  props.providerMode ? { subscriptionUrl: () => subscriptionUrl.value } : {},
+)
 const editorModal = ref<{
   open: () => void
   close: (force?: boolean) => void
@@ -96,13 +101,21 @@ function setStringList(field: 'proxies' | 'use', values: string[]) {
   resourceDraft.value[field] = values
 }
 
-async function open() {
+async function open(provider?: { name: string; url: string }) {
+  if (props.providerMode) {
+    if (!provider?.url.trim()) return
+    providerName.value = provider.name
+    subscriptionUrl.value = provider.url
+  }
   editorModal.value?.open()
   await editor.load()
 }
 
 function confirmEditorClose() {
-  return !editor.dirty.value || confirm(t('routingEditorDiscardConfirm'))
+  if (editor.dirty.value && !confirm(t('routingEditorDiscardConfirm')))
+    return false
+  editor.cancelLoad()
+  return true
 }
 
 function confirmResourceClose() {
@@ -124,8 +137,7 @@ function openResource(kind: ResourceKind, index: number | null = null) {
   const advanced: ConfigObject = {}
   const formFields = new Set([
     ...routingResourceFields(kind, String(resourceDraft.value.type ?? '')),
-    'proxies',
-    'use',
+    ...(kind === 'group' ? ['proxies', 'use'] : []),
   ])
   for (const [field, value] of Object.entries(resourceDraft.value)) {
     if (isSensitiveRoutingField(field)) {
@@ -303,7 +315,13 @@ function removeResource(kind: ResourceKind, index: number) {
 async function saveEditor() {
   const result = await editor.save()
   if (result === 'saved' || result === 'unchanged') {
-    toast.success(t('proxyConfigSaved'))
+    toast.success(
+      t(
+        props.providerMode
+          ? 'providerSubscriptionExported'
+          : 'proxyConfigSaved',
+      ),
+    )
     editorModal.value?.close(true)
     emit('saved')
     return
@@ -341,7 +359,11 @@ defineExpose({ open })
   <Modal
     ref="editorModal"
     size="xl"
-    :title="t('proxyConfigEditorTitle')"
+    :title="
+      providerMode
+        ? t('providerSubscriptionEditorTitle', { name: providerName })
+        : t('proxyConfigEditorTitle')
+    "
     :before-close="confirmEditorClose"
   >
     <template #icon>
@@ -393,17 +415,38 @@ defineExpose({ open })
       <p class="max-w-xl text-sm text-error">
         {{ editor.errorMessage.value || t('proxyConfigLoadFailed') }}
       </p>
+      <Button
+        v-if="providerMode"
+        class="btn-primary btn-sm"
+        @click="editor.load()"
+      >
+        {{ t('retry') }}
+      </Button>
     </div>
 
     <div v-else class="flex flex-col gap-5">
       <p class="text-sm text-base-content/65">
-        {{ t('proxyConfigEditorHint') }}
+        {{
+          t(
+            providerMode
+              ? 'providerSubscriptionEditorHint'
+              : 'proxyConfigEditorHint',
+          )
+        }}
       </p>
 
-      <div class="grid gap-5 lg:grid-cols-2">
+      <div class="grid gap-5" :class="{ 'lg:grid-cols-2': !providerMode }">
         <section class="min-w-0 rounded-xl border border-base-content/10 p-3">
           <div class="mb-3 flex items-center justify-between gap-2">
-            <h3 class="font-semibold">{{ t('routingEditorNodes') }}</h3>
+            <h3 class="font-semibold">
+              {{
+                t(
+                  providerMode
+                    ? 'providerSubscriptionNodes'
+                    : 'routingEditorNodes',
+                )
+              }}
+            </h3>
             <Button class="btn-primary btn-sm" @click="openResource('proxy')">
               <IconPlus :size="16" />
               {{ t('add') }}
@@ -464,7 +507,10 @@ defineExpose({ open })
           </div>
         </section>
 
-        <section class="min-w-0 rounded-xl border border-base-content/10 p-3">
+        <section
+          v-if="!providerMode"
+          class="min-w-0 rounded-xl border border-base-content/10 p-3"
+        >
           <div class="mb-3 flex items-center justify-between gap-2">
             <h3 class="font-semibold">{{ t('proxyGroups') }}</h3>
             <Button class="btn-primary btn-sm" @click="openResource('group')">
@@ -593,16 +639,23 @@ defineExpose({ open })
     :before-close="confirmResourceClose"
   >
     <div class="flex flex-col gap-4">
-      <p v-if="editingExisting" class="text-xs text-base-content/60">
+      <p
+        v-if="editingExisting && !providerMode"
+        class="text-xs text-base-content/60"
+      >
         {{ t('routingEditorNameLocked') }}
       </p>
       <template v-for="field in resourceFields" :key="field">
-        <label class="form-control gap-1">
-          <span class="text-sm font-medium">{{ field }}</span>
+        <label
+          class="grid min-h-8 grid-cols-1 items-center gap-x-4 gap-y-1.5 sm:grid-cols-[10rem_minmax(0,1fr)]"
+        >
+          <span class="min-w-0 text-sm font-medium break-words">{{
+            field
+          }}</span>
           <select
             v-if="field === 'type'"
             :value="resourceDraft[field]"
-            class="select-bordered select select-sm"
+            class="select-bordered select w-full min-w-0 select-sm"
             @change="updateTextField(field, $event)"
           >
             <option
@@ -619,22 +672,22 @@ defineExpose({ open })
             v-else-if="BOOLEAN_ROUTING_FIELDS.has(field)"
             :checked="resourceDraft[field] === true"
             type="checkbox"
-            class="toggle toggle-primary toggle-sm"
+            class="toggle justify-self-start toggle-primary toggle-sm"
             @change="updateBooleanField(field, $event)"
           />
           <input
             v-else-if="NUMBER_ROUTING_FIELDS.has(field)"
             :value="resourceDraft[field]"
             type="number"
-            class="input-bordered input input-sm"
+            class="input-bordered input w-full min-w-0 input-sm"
             @input="updateNumberField(field, $event)"
           />
           <input
             v-else
             :value="resourceDraft[field]"
-            :disabled="field === 'name' && editingExisting"
+            :disabled="field === 'name' && editingExisting && !providerMode"
             :type="isSensitiveRoutingField(field) ? 'password' : 'text'"
-            class="input-bordered input input-sm"
+            class="input-bordered input w-full min-w-0 input-sm"
             @input="updateTextField(field, $event)"
           />
         </label>

@@ -5,6 +5,7 @@ import type {
 } from '@metacubexd/config-editor'
 import { findResourceReferences } from '@metacubexd/config-editor'
 import { useActiveProfileEditor } from './useActiveProfileEditor'
+import { useProviderSubscriptionDocument } from './useProviderSubscriptionDocument'
 
 export interface RoutingResourceDraft {
   value: ConfigObject
@@ -35,8 +36,12 @@ function draftsFromSection(value: ConfigValue | undefined) {
   }))
 }
 
-export function useProxyConfigEditor() {
-  const session = useActiveProfileEditor()
+export function useProxyConfigEditor(
+  options: { subscriptionUrl?: () => string } = {},
+) {
+  const session = options.subscriptionUrl
+    ? useProviderSubscriptionDocument(options.subscriptionUrl)
+    : useActiveProfileEditor()
   const state = ref<
     | 'idle'
     | 'ready'
@@ -66,8 +71,14 @@ export function useProxyConfigEditor() {
     })
   }
 
+  let loadVersion = 0
   const load = async () => {
+    const version = ++loadVersion
+    state.value = 'idle'
+    proxies.value = []
+    groups.value = []
     const result = await session.load()
+    if (version !== loadVersion) return state.value
     state.value = result
     blockedReferences.value = []
     blockedResourceName.value = ''
@@ -79,6 +90,12 @@ export function useProxyConfigEditor() {
       groups.value = []
     }
     return result
+  }
+
+  const cancelLoad = () => {
+    if (!('cancelLoad' in session)) return
+    loadVersion++
+    session.cancelLoad()
   }
 
   const add = (kind: 'proxy' | 'group', value: ConfigObject) => {
@@ -96,7 +113,8 @@ export function useProxyConfigEditor() {
     const current = target.value[index]
     if (!current) return
     const nextValue = cloneValue(value)
-    if (current.originalName) nextValue.name = current.originalName
+    if (current.originalName && !options.subscriptionUrl)
+      nextValue.name = current.originalName
     target.value = target.value.map((draft, itemIndex) =>
       itemIndex === index ? { ...draft, value: nextValue } : draft,
     )
@@ -156,7 +174,8 @@ export function useProxyConfigEditor() {
   }
 
   return {
-    available: session.available,
+    available:
+      'available' in session ? session.available : computed(() => true),
     state,
     proxies,
     groups,
@@ -168,8 +187,12 @@ export function useProxyConfigEditor() {
     dirty: session.dirty,
     diagnostics: session.diagnostics,
     errorMessage: session.errorMessage,
-    fullEditorPath: session.fullEditorPath,
+    fullEditorPath:
+      'fullEditorPath' in session
+        ? session.fullEditorPath
+        : computed(() => '/profiles'),
     load,
+    cancelLoad,
     add,
     update,
     move,

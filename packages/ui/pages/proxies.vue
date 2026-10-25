@@ -90,6 +90,9 @@ function saveSubscriptionUrl() {
 
 const connectivityModal = ref<{ open: () => void; close: () => void }>()
 const proxyConfigEditor = ref<{ open: () => Promise<void> | void }>()
+const providerConfigEditor = ref<{
+  open: (provider: { name: string; url: string }) => Promise<void>
+}>()
 const proxyGroupsWrapper = ref<{ isTwoColumns: boolean }>()
 const providersWrapper = ref<{ isTwoColumns: boolean }>()
 const proxyMasterDetail = ref<{
@@ -715,30 +718,33 @@ const ProxyProviderTitle = defineComponent({
               ],
             ),
             h('div', { class: 'flex items-center gap-1.5 shrink-0' }, [
-              h(
-                Button,
-                {
-                  class:
-                    'flex items-center justify-center w-9 h-9 rounded-lg bg-base-content/6 border border-base-content/8 text-base-content/60 transition-all duration-200 hover:bg-primary/15 hover:border-primary/30 hover:text-primary hover:-translate-y-px hover:shadow-lg hover:shadow-primary/15 active:translate-y-0 disabled:bg-success/15 disabled:border-success/30 disabled:cursor-not-allowed disabled:opacity-100',
-                  disabled: proxiesStore.updatingMap[props.provider.name],
-                  onClick: (e: MouseEvent) => {
-                    e.stopPropagation()
-                    proxiesStore.updateProviderByProviderName(
-                      props.provider.name,
-                    )
-                  },
-                },
-                {
-                  default: () =>
-                    h(IconReload, {
-                      size: 18,
-                      class: {
-                        'animate-spin text-success':
-                          proxiesStore.updatingMap[props.provider.name],
-                      },
+              providerSubscriptions.hasUrl(props.provider.name) &&
+                h(
+                  Button,
+                  {
+                    class:
+                      'flex items-center justify-center w-9 h-9 rounded-lg bg-base-content/6 border border-base-content/8 text-base-content/60 transition-all duration-200 hover:bg-primary/15 hover:border-primary/30 hover:text-primary hover:-translate-y-px hover:shadow-lg hover:shadow-primary/15 active:translate-y-0 disabled:bg-success/15 disabled:border-success/30 disabled:cursor-not-allowed disabled:opacity-100',
+                    title: t('providerSubscriptionEditorTitle', {
+                      name: props.provider.name,
                     }),
-                },
-              ),
+                    'aria-label': t('providerSubscriptionEditorTitle', {
+                      name: props.provider.name,
+                    }),
+                    onClick: (e: MouseEvent) => {
+                      e.stopPropagation()
+                      void providerConfigEditor.value?.open({
+                        name: props.provider.name,
+                        url: providerSubscriptions.getUrl(props.provider.name),
+                      })
+                    },
+                  },
+                  {
+                    default: () =>
+                      h(IconReload, {
+                        size: 18,
+                      }),
+                  },
+                ),
               h(
                 Button,
                 {
@@ -1529,6 +1535,7 @@ const ProviderProxyNodes = defineComponent({
       <ConnectivityBoard />
     </Modal>
 
+    <ProxyConfigEditor ref="providerConfigEditor" provider-mode />
     <ProxyConfigEditor ref="proxyConfigEditor" @saved="onProxyConfigSaved" />
   </div>
 </template>

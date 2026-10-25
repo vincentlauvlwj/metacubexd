@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick, ref } from 'vue'
+import { computed, effectScope, nextTick, ref } from 'vue'
 import { useProxyProviderSubscriptions } from '../useProxyProviderSubscriptions'
 
 const url = 'https://subscription.example/a'
@@ -47,6 +47,22 @@ afterEach(() => {
 })
 
 describe('proxy provider subscriptions', () => {
+  it('reactively exposes configured providers even when usage requests fail', () => {
+    fetchMock.mockRejectedValue(new Error('offline'))
+    const subscriptions = create()
+    const visible = computed(() => subscriptions.hasUrl('provider-a'))
+    expect(visible.value).toBe(false)
+    subscriptions.saveUrl('provider-a', url)
+    expect(visible.value).toBe(true)
+    subscriptions.saveUrl('provider-a', '  ')
+    expect(visible.value).toBe(false)
+  })
+
+  it('recognizes saved links before the provider tab is active', () => {
+    localStorage.setItem(urlKey, url)
+    expect(create().hasUrl('provider-a')).toBe(true)
+  })
+
   it('shows cached data immediately and replaces it with fresh header data', async () => {
     seedCache()
     let resolve!: (value: Response) => void

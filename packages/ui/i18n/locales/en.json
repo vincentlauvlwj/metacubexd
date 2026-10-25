@@ -654,5 +654,11 @@
   "visualEditorDiagnostics": "Configuration diagnostics",
   "visualEditorManaged": "Managed",
   "quality": "Quality",
-  "sortDefault": "Default"
+  "sortDefault": "Default",
+  "providerSubscriptionEditorTitle": "Edit subscription nodes for {name}",
+  "providerSubscriptionEditorHint": "Edit the subscription nodes. Saving outputs YAML containing only node configurations to the browser console.",
+  "providerSubscriptionExported": "Node YAML has been written to the browser console",
+  "providerSubscriptionNodes": "Subscription nodes",
+  "providerSubscriptionInvalid": "The subscription must contain a proxies array of node configuration objects.",
+  "providerSubscriptionTimeout": "Subscription download timed out. Please retry."
 }

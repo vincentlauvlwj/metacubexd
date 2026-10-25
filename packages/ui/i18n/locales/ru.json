@@ -598,5 +598,11 @@
   "visualEditorDiagnostics": "Диагностика конфигурации",
   "visualEditorManaged": "Управляемый",
   "quality": "Качество",
-  "sortDefault": "По умолчанию"
+  "sortDefault": "По умолчанию",
+  "providerSubscriptionEditorTitle": "Редактировать узлы подписки {name}",
+  "providerSubscriptionEditorHint": "Измените узлы подписки. При сохранении YAML только с настройками узлов выводится в консоль браузера.",
+  "providerSubscriptionExported": "YAML узлов выведен в консоль браузера",
+  "providerSubscriptionNodes": "Узлы подписки",
+  "providerSubscriptionInvalid": "Подписка должна содержать массив proxies с объектами настроек узлов.",
+  "providerSubscriptionTimeout": "Время загрузки подписки истекло. Повторите попытку."
 }
