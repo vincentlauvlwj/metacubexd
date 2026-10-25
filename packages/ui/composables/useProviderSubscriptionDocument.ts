@@ -5,6 +5,7 @@ import {
   validateDocument,
 } from '@metacubexd/config-editor'
 import { computed, onScopeDispose, ref, shallowRef } from 'vue'
+import { prefixNodeRegionFlag } from '~/utils/subscriptionNodeNames'
 import { toSubscriptionProxyUrl } from '~/utils/subscriptionProxy'
 
 /** An independent editing session: no active profile, core update or upload. */
@@ -60,7 +61,12 @@ export function useProviderSubscriptionDocument(getUrl: () => string) {
       ) {
         throw new Error(t('providerSubscriptionInvalid'))
       }
-      document.value = replaceDocumentData('proxies: []\n', { proxies: nodes })
+      document.value = replaceDocumentData('proxies: []\n', {
+        proxies: (nodes as ConfigObject[]).map((node) => {
+          if (typeof node.name !== 'string') return node
+          return { ...node, name: prefixNodeRegionFlag(node.name) }
+        }),
+      })
       initial.value = JSON.stringify(document.value.data)
       return 'ready' as const
     } catch (error) {

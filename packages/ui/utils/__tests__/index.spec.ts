@@ -773,10 +773,26 @@ describe('utils/index', () => {
       expect(parseNodeRegion('HK-Lai Tak Tsuen-h-15211021-czzm')).toBe('HK')
     })
 
+    it.each([
+      ['日本 05', 'JP'],
+      ['专线-香港-01', 'HK'],
+      ['节点 01 美国', 'US'],
+      ['高速新加坡节点', 'SG'],
+      ['节点台湾', 'TW'],
+      ['节点澳洲', 'AU'],
+      ['🇯🇵 美国', 'JP'],
+      ['US-日本', 'US'],
+    ])(
+      'matches Chinese regions after flags and ISO tokens: %s',
+      (name, code) => {
+        expect(parseNodeRegion(name)).toBe(code)
+      },
+    )
+
     it('returns null for unrecognized names', () => {
       expect(parseNodeRegion('sg01-reality')).toBeNull()
       expect(parseNodeRegion('claw1-reality')).toBeNull()
-      expect(parseNodeRegion('日本 05')).toBeNull()
+      expect(parseNodeRegion('未知地区 05')).toBeNull()
     })
   })
 

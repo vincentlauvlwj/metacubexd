@@ -60,8 +60,8 @@ describe('provider subscription node editor', () => {
     )!
     expect(await editor.load()).toBe('ready')
     expect(editor.proxies.value.map((draft) => draft.value.name)).toEqual([
-      '香港',
-      '日本',
+      '🇭🇰 香港',
+      '🇯🇵 日本',
     ])
   })
 
@@ -80,6 +80,55 @@ describe('provider subscription node editor', () => {
     expect(editor.proxies.value[0]?.value.password).toBe('test:secret')
     expect(editor.groups.value).toEqual([])
     expect(editor.dirty.value).toBe(false)
+  })
+
+  it('prefixes downloaded region-code names while preserving flags and unknown names', async () => {
+    const names = [
+      'JP-Narita-01',
+      'us_US-01',
+      'hk 香港',
+      '🇸🇬SG_新加坡',
+      '🇭🇰 香港',
+      '🇺🇸JP-conflict',
+      '日本 05',
+      'sg01-reality',
+      'AI-test',
+    ]
+    const nodes = names.map((name) => ({
+      name,
+      type: 'trojan',
+      server: 'example.com',
+      port: 443,
+      password: 'secret',
+    }))
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ proxies: nodes })),
+    )
+    const { editor } = create()
+    expect(await editor.load()).toBe('ready')
+    expect(editor.proxies.value.map((draft) => draft.value)).toEqual(
+      nodes.map((node, i) => ({
+        ...node,
+        name: [
+          '🇯🇵 JP-Narita-01',
+          '🇺🇸 us_US-01',
+          '🇭🇰 hk 香港',
+          ...names.slice(3, 6),
+          '🇯🇵 日本 05',
+          ...names.slice(7),
+        ][i],
+      })),
+    )
+    expect(editor.dirty.value).toBe(false)
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          proxies: editor.proxies.value.map((draft) => draft.value),
+        }),
+      ),
+    )
+    expect(await editor.load()).toBe('ready')
+    expect(editor.proxies.value[0]?.value.name).toBe('🇯🇵 JP-Narita-01')
   })
 
   it('exports added, renamed, reordered and deleted nodes without other sections', async () => {
@@ -161,7 +210,7 @@ describe('provider subscription node editor', () => {
     const output = vi.spyOn(console, 'log').mockImplementation(() => {})
     const { editor } = create()
     await editor.load()
-    editor.add('proxy', { name: '香港', type: 'trojan' })
+    editor.add('proxy', { name: '🇭🇰 香港', type: 'trojan' })
     expect(await editor.save()).toBe('invalid')
     expect(output).not.toHaveBeenCalled()
     editor.update('proxy', 2, { name: 'unique', type: 'trojan' })

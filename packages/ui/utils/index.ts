@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { PROXIES_ORDERING_TYPE, RULES_ORDERING_TYPE } from '~/constants'
+import { matchChineseNodeRegion } from './chineseNodeRegions'
 import { calculateNodeScore } from './nodeScoring'
 import 'dayjs/locale/zh-cn'
 import 'dayjs/locale/ru'
@@ -412,7 +413,7 @@ export function filterProxiesByName(proxyNames: string[], keyword: string) {
 }
 
 // ponytail: heuristic region detection — a leading flag emoji or a leading
-// ISO-3166 alpha-2 code token. Names with neither fall to REGION_OTHER.
+// ISO-3166 alpha-2 code token, then a Chinese country/region name substring.
 // Upgrade path: extend ISO_CODES / add a provider-prefix map if real configs
 // use non-standard region tokens.
 export const REGION_OTHER = '__other__'
@@ -499,7 +500,7 @@ export function parseNodeRegion(name: string): string | null {
       ? name.slice(0, 2).toUpperCase()
       : undefined
   if (code && ISO_CODES.has(code)) return code
-  return null
+  return matchChineseNodeRegion(name)
 }
 
 export interface RegionFacet {
