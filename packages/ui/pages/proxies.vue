@@ -15,7 +15,6 @@ import {
   IconEdit,
   IconGlobe,
   IconPinnedOff,
-  IconReload,
   IconSearch,
   IconSettings,
   IconTarget,
@@ -829,20 +828,6 @@ const ProviderProxyNodes = defineComponent({
           <IconBrandSpeedtest
             :size="18"
             :class="{ 'animate-pulse text-success': isBatchTesting }"
-          />
-        </Button>
-
-        <Button
-          v-if="activeTab === 'proxyProviders'"
-          class="flex h-9 w-9 items-center justify-center rounded-[0.625rem] border border-base-content/10 bg-base-200/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/15 hover:text-primary"
-          :disabled="proxiesStore.isAllProviderUpdating"
-          @click="proxiesStore.updateAllProvider"
-        >
-          <IconReload
-            :size="18"
-            :class="{
-              'animate-spin text-success': proxiesStore.isAllProviderUpdating,
-            }"
           />
         </Button>
       </div>

@@ -51,7 +51,7 @@ export default defineComponent({
               'div',
               {
                 class:
-                  'flex flex-wrap items-center gap-x-6 gap-y-2 flex-1 min-w-0',
+                  'grid grid-cols-1 items-center gap-y-2 flex-1 min-w-0',
               },
               [
                 h(
