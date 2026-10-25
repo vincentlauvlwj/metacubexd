@@ -23,14 +23,15 @@ import {
   IconX,
 } from '@tabler/icons-vue'
 import byteSize from 'byte-size'
-import dayjs from 'dayjs'
 import Button from '~/components/Button.vue'
 import ConnectivityBoard from '~/components/ConnectivityBoard.vue'
+import ProviderSubscriptionEditor from '~/components/ProviderSubscriptionEditor.vue'
+import ProviderSubscriptionSettings from '~/components/ProviderSubscriptionSettings.vue'
+import ProviderSubscriptionTitle from '~/components/ProviderSubscriptionTitle.vue'
 import ProxyNodeCard from '~/components/ProxyNodeCard.vue'
 import ProxyNodeListItem from '~/components/ProxyNodeListItem.vue'
 import ProxyNodePreview from '~/components/ProxyNodePreview.vue'
 import ProxyNodeTableRow from '~/components/ProxyNodeTableRow.vue'
-import SubscriptionInfo from '~/components/SubscriptionInfo.vue'
 import { useBatchLatencyTest } from '~/composables/useBatchLatencyTest'
 import { useProxyProviderSubscriptions } from '~/composables/useProxyProviderSubscriptions'
 import {
@@ -43,12 +44,11 @@ import {
   filterProxiesByAvailability,
   filterProxiesByName,
   formatProxyType,
-  formatTimeFromNow,
   sortProxiesByOrderingType,
 } from '~/utils'
 import { findRecommendedNode } from '~/utils/nodeScoring'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 useHead({ title: computed(() => t('proxies')) })
 const proxiesStore = useProxiesStore()
@@ -70,29 +70,12 @@ const providerSubscriptions = useProxyProviderSubscriptions(
   () => activeTab.value === 'proxyProviders',
 )
 const settingsModal = ref<{ open: () => void; close: () => void }>()
-const subscriptionModal = ref<{ open: () => void; close: () => void }>()
-const subscriptionProviderName = ref('')
-const subscriptionUrl = ref('')
-
-function openSubscriptionModal(providerName: string) {
-  subscriptionProviderName.value = providerName
-  subscriptionUrl.value = providerSubscriptions.getUrl(providerName)
-  subscriptionModal.value?.open()
-}
-
-function saveSubscriptionUrl() {
-  providerSubscriptions.saveUrl(
-    subscriptionProviderName.value,
-    subscriptionUrl.value,
-  )
-  subscriptionModal.value?.close()
-}
-
+const subscriptionModal =
+  ref<InstanceType<typeof ProviderSubscriptionSettings>>()
 const connectivityModal = ref<{ open: () => void; close: () => void }>()
 const proxyConfigEditor = ref<{ open: () => Promise<void> | void }>()
-const providerConfigEditor = ref<{
-  open: (provider: { name: string; url: string }) => Promise<void>
-}>()
+const providerConfigEditor =
+  ref<InstanceType<typeof ProviderSubscriptionEditor>>()
 const proxyGroupsWrapper = ref<{ isTwoColumns: boolean }>()
 const providersWrapper = ref<{ isTwoColumns: boolean }>()
 const proxyMasterDetail = ref<{
@@ -652,168 +635,16 @@ const ProxyProviderTitle = defineComponent({
     sortedProxyNames: { type: Array as () => string[], required: true },
   },
   setup(props) {
-    const subscriptionInfo = computed(() =>
-      providerSubscriptions.infoByProvider.get(props.provider.name),
-    )
-    const subscriptionExpiry = computed(() => {
-      const expire = subscriptionInfo.value?.Expire
-      return expire ? dayjs(expire * 1000).format('YYYY-MM-DD') : t('noExpire')
-    })
-
     return () =>
-      h('div', { class: 'flex flex-col gap-3 flex-1 min-w-0' }, [
-        h(
-          'div',
-          {
-            class: 'flex items-center justify-between gap-2 w-full flex-nowrap',
-          },
-          [
-            h(
-              'div',
-              {
-                class:
-                  'flex flex-wrap items-center gap-x-6 gap-y-2 flex-1 min-w-0',
-              },
-              [
-                h(
-                  'div',
-                  {
-                    class:
-                      'flex max-w-full min-w-0 flex-wrap items-center gap-2',
-                  },
-                  [
-                    h(
-                      'span',
-                      {
-                        class:
-                          'text-lg font-semibold tracking-tight line-clamp-1 break-all text-base-content',
-                      },
-                      props.provider.name,
-                    ),
-                    h(
-                      'div',
-                      {
-                        class:
-                          'badge badge-sm text-[0.7rem] font-semibold px-2 py-1 rounded-md bg-primary/12 text-primary border border-primary/20',
-                      },
-                      props.provider.proxies.length,
-                    ),
-                    h(
-                      'div',
-                      {
-                        class:
-                          'badge badge-sm text-[0.7rem] font-semibold px-2 py-1 rounded-md bg-primary/12 text-primary border border-primary/20',
-                      },
-                      props.provider.vehicleType,
-                    ),
-                  ],
-                ),
-                subscriptionInfo.value &&
-                  h('div', { class: 'w-[200px] max-w-full shrink-0' }, [
-                    h(SubscriptionInfo, {
-                      compact: true,
-                      subscriptionInfo: subscriptionInfo.value,
-                    }),
-                  ]),
-              ],
-            ),
-            h('div', { class: 'flex items-center gap-1.5 shrink-0' }, [
-              providerSubscriptions.hasUrl(props.provider.name) &&
-                h(
-                  Button,
-                  {
-                    class:
-                      'flex items-center justify-center w-9 h-9 rounded-lg bg-base-content/6 border border-base-content/8 text-base-content/60 transition-all duration-200 hover:bg-primary/15 hover:border-primary/30 hover:text-primary hover:-translate-y-px hover:shadow-lg hover:shadow-primary/15 active:translate-y-0 disabled:bg-success/15 disabled:border-success/30 disabled:cursor-not-allowed disabled:opacity-100',
-                    title: t('providerSubscriptionEditorTitle', {
-                      name: props.provider.name,
-                    }),
-                    'aria-label': t('providerSubscriptionEditorTitle', {
-                      name: props.provider.name,
-                    }),
-                    onClick: (e: MouseEvent) => {
-                      e.stopPropagation()
-                      void providerConfigEditor.value?.open({
-                        name: props.provider.name,
-                        url: providerSubscriptions.getUrl(props.provider.name),
-                      })
-                    },
-                  },
-                  {
-                    default: () =>
-                      h(IconReload, {
-                        size: 18,
-                      }),
-                  },
-                ),
-              h(
-                Button,
-                {
-                  class:
-                    'flex items-center justify-center w-9 h-9 rounded-lg bg-base-content/6 border border-base-content/8 text-base-content/60 transition-all duration-200 hover:bg-primary/15 hover:border-primary/30 hover:text-primary hover:-translate-y-px hover:shadow-lg hover:shadow-primary/15 active:translate-y-0 disabled:bg-success/15 disabled:border-success/30 disabled:cursor-not-allowed disabled:opacity-100',
-                  disabled:
-                    proxiesStore.proxyProviderLatencyTestingMap[
-                      props.provider.name
-                    ],
-                  onClick: (e: MouseEvent) => {
-                    e.stopPropagation()
-                    proxiesStore.proxyProviderLatencyTest(props.provider.name)
-                  },
-                },
-                {
-                  default: () =>
-                    h(IconBrandSpeedtest, {
-                      size: 18,
-                      class: {
-                        'animate-pulse text-success':
-                          proxiesStore.proxyProviderLatencyTestingMap[
-                            props.provider.name
-                          ],
-                      },
-                    }),
-                },
-              ),
-              h(
-                Button,
-                {
-                  class:
-                    'flex items-center justify-center w-9 h-9 rounded-lg bg-base-content/6 border border-base-content/8 text-base-content/60 transition-all duration-200 hover:bg-primary/15 hover:border-primary/30 hover:text-primary hover:-translate-y-px hover:shadow-lg hover:shadow-primary/15 active:translate-y-0',
-                  title: t('configureSubscriptionUrl'),
-                  'aria-label': t('configureSubscriptionUrl'),
-                  onClick: (e: MouseEvent) => {
-                    e.stopPropagation()
-                    openSubscriptionModal(props.provider.name)
-                  },
-                },
-                { default: () => h(IconSettings, { size: 18 }) },
-              ),
-            ]),
-          ],
-        ),
-        h('div', { class: 'flex flex-col gap-2.5 pt-1' }, [
-          h(
-            'div',
-            {
-              class:
-                'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4 text-base-content/45',
-            },
-            [
-              h(
-                'span',
-                `${t('updated')} ${formatTimeFromNow(props.provider.updatedAt, locale.value)}`,
-              ),
-              subscriptionInfo.value &&
-                h('span', { 'aria-hidden': 'true' }, '·'),
-              subscriptionInfo.value &&
-                h('span', `${t('expire')}: ${subscriptionExpiry.value}`),
-            ],
-          ),
-          !proxiesStore.collapsedMap[props.provider.name] &&
-            h(ProxyNodePreview, {
-              proxyNameList: props.sortedProxyNames,
-              testUrl: props.provider.testUrl,
-            }),
-        ]),
-      ])
+      h(ProviderSubscriptionTitle, {
+        provider: props.provider,
+        sortedProxyNames: props.sortedProxyNames,
+        subscriptions: providerSubscriptions,
+        onConfigure: (name: string) => subscriptionModal.value?.open(name),
+        onEdit: (provider: { name: string; url: string }) => {
+          void providerConfigEditor.value?.open(provider)
+        },
+      })
   },
 })
 
@@ -1484,47 +1315,10 @@ const ProviderProxyNodes = defineComponent({
       </div>
     </Modal>
 
-    <Modal
+    <ProviderSubscriptionSettings
       ref="subscriptionModal"
-      :title="
-        t('configureProviderSubscriptionUrl', {
-          name: subscriptionProviderName,
-        })
-      "
-    >
-      <template #icon>
-        <IconSettings :size="24" />
-      </template>
-
-      <form
-        id="provider-subscription-form"
-        @submit.prevent="saveSubscriptionUrl"
-      >
-        <input
-          v-model="subscriptionUrl"
-          type="text"
-          inputmode="url"
-          class="input w-full border-base-content/20 bg-base-100 text-base-content focus:border-primary focus:outline-primary"
-          :aria-label="t('profilesUrl')"
-          :placeholder="t('profilesUrl')"
-          autocomplete="off"
-          spellcheck="false"
-        />
-      </form>
-
-      <template #actions>
-        <Button class="btn-ghost" @click="subscriptionModal?.close()">
-          {{ t('cancel') }}
-        </Button>
-        <Button
-          type="submit"
-          form="provider-subscription-form"
-          class="btn-primary"
-        >
-          {{ t('confirm') }}
-        </Button>
-      </template>
-    </Modal>
+      :subscriptions="providerSubscriptions"
+    />
 
     <!-- Connectivity Board Modal -->
     <Modal ref="connectivityModal" :title="t('connectivityBoard')">
@@ -1535,7 +1329,7 @@ const ProviderProxyNodes = defineComponent({
       <ConnectivityBoard />
     </Modal>
 
-    <ProxyConfigEditor ref="providerConfigEditor" provider-mode />
+    <ProviderSubscriptionEditor ref="providerConfigEditor" />
     <ProxyConfigEditor ref="proxyConfigEditor" @saved="onProxyConfigSaved" />
   </div>
 </template>

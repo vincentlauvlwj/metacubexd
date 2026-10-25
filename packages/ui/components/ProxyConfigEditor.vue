@@ -23,18 +23,23 @@ import {
 
 type ResourceKind = 'proxy' | 'group'
 
-const props = defineProps<{ providerMode?: boolean }>()
+const props = defineProps<{
+  editor?: ReturnType<typeof useProxyConfigEditor>
+  title?: string
+  hint?: string
+  nodesTitle?: string
+  savedMessage?: string
+  nodesOnly?: boolean
+  allowRename?: boolean
+  retryOnError?: boolean
+}>()
 const emit = defineEmits<{
   saved: []
 }>()
 
 const { t } = useI18n()
 const router = useRouter()
-const providerName = ref('')
-const subscriptionUrl = ref('')
-const editor = useProxyConfigEditor(
-  props.providerMode ? { subscriptionUrl: () => subscriptionUrl.value } : {},
-)
+const editor = props.editor ?? useProxyConfigEditor()
 const editorModal = ref<{
   open: () => void
   close: (force?: boolean) => void
@@ -101,12 +106,7 @@ function setStringList(field: 'proxies' | 'use', values: string[]) {
   resourceDraft.value[field] = values
 }
 
-async function open(provider?: { name: string; url: string }) {
-  if (props.providerMode) {
-    if (!provider?.url.trim()) return
-    providerName.value = provider.name
-    subscriptionUrl.value = provider.url
-  }
+async function open() {
   editorModal.value?.open()
   await editor.load()
 }
@@ -315,13 +315,7 @@ function removeResource(kind: ResourceKind, index: number) {
 async function saveEditor() {
   const result = await editor.save()
   if (result === 'saved' || result === 'unchanged') {
-    toast.success(
-      t(
-        props.providerMode
-          ? 'providerSubscriptionExported'
-          : 'proxyConfigSaved',
-      ),
-    )
+    toast.success(props.savedMessage ?? t('proxyConfigSaved'))
     editorModal.value?.close(true)
     emit('saved')
     return
@@ -359,11 +353,7 @@ defineExpose({ open })
   <Modal
     ref="editorModal"
     size="xl"
-    :title="
-      providerMode
-        ? t('providerSubscriptionEditorTitle', { name: providerName })
-        : t('proxyConfigEditorTitle')
-    "
+    :title="title ?? t('proxyConfigEditorTitle')"
     :before-close="confirmEditorClose"
   >
     <template #icon>
@@ -416,7 +406,7 @@ defineExpose({ open })
         {{ editor.errorMessage.value || t('proxyConfigLoadFailed') }}
       </p>
       <Button
-        v-if="providerMode"
+        v-if="retryOnError"
         class="btn-primary btn-sm"
         @click="editor.load()"
       >
@@ -426,26 +416,14 @@ defineExpose({ open })
 
     <div v-else class="flex flex-col gap-5">
       <p class="text-sm text-base-content/65">
-        {{
-          t(
-            providerMode
-              ? 'providerSubscriptionEditorHint'
-              : 'proxyConfigEditorHint',
-          )
-        }}
+        {{ hint ?? t('proxyConfigEditorHint') }}
       </p>
 
-      <div class="grid gap-5" :class="{ 'lg:grid-cols-2': !providerMode }">
+      <div class="grid gap-5" :class="{ 'lg:grid-cols-2': !nodesOnly }">
         <section class="min-w-0 rounded-xl border border-base-content/10 p-3">
           <div class="mb-3 flex items-center justify-between gap-2">
             <h3 class="font-semibold">
-              {{
-                t(
-                  providerMode
-                    ? 'providerSubscriptionNodes'
-                    : 'routingEditorNodes',
-                )
-              }}
+              {{ nodesTitle ?? t('routingEditorNodes') }}
             </h3>
             <Button class="btn-primary btn-sm" @click="openResource('proxy')">
               <IconPlus :size="16" />
@@ -508,7 +486,7 @@ defineExpose({ open })
         </section>
 
         <section
-          v-if="!providerMode"
+          v-if="!nodesOnly"
           class="min-w-0 rounded-xl border border-base-content/10 p-3"
         >
           <div class="mb-3 flex items-center justify-between gap-2">
@@ -640,7 +618,7 @@ defineExpose({ open })
   >
     <div class="flex flex-col gap-4">
       <p
-        v-if="editingExisting && !providerMode"
+        v-if="editingExisting && !allowRename"
         class="text-xs text-base-content/60"
       >
         {{ t('routingEditorNameLocked') }}
@@ -685,7 +663,7 @@ defineExpose({ open })
           <input
             v-else
             :value="resourceDraft[field]"
-            :disabled="field === 'name' && editingExisting && !providerMode"
+            :disabled="field === 'name' && editingExisting && !allowRename"
             :type="isSensitiveRoutingField(field) ? 'password' : 'text'"
             class="input-bordered input w-full min-w-0 input-sm"
             @input="updateTextField(field, $event)"

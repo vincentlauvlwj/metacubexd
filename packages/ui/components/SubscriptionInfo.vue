@@ -5,7 +5,6 @@ import dayjs from 'dayjs'
 
 interface Props {
   subscriptionInfo?: SubscriptionInfo
-  compact?: boolean
 }
 
 const props = defineProps<Props>()
@@ -38,48 +37,29 @@ const expireStr = computed(() => {
 
 <template>
   <template v-if="subscriptionInfo">
-    <div v-if="compact" class="w-full">
-      <div
-        class="flex items-baseline justify-between gap-2 text-xs leading-4 text-base-content/60 tabular-nums"
-      >
-        <span class="min-w-0 truncate" :title="`${used} / ${total}`"
-          >{{ used }} / {{ total }}</span
-        >
-        <span class="shrink-0 text-base-content/45">{{ percentage }}%</span>
-      </div>
-      <div class="mt-1 h-1 overflow-hidden rounded-full bg-base-content/15">
+    <div class="flex items-center gap-2 pt-1">
+      <div class="h-2 flex-1 overflow-hidden rounded-full bg-base-content/15">
         <div
-          class="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
-          :style="{ width: `${percentage}%` }"
+          class="h-full rounded-full transition-[width] duration-500 ease-out"
+          :style="{
+            width: `${percentage}%`,
+            background:
+              'linear-gradient(90deg, var(--color-primary), var(--color-secondary))',
+          }"
         />
+      </div>
+      <div
+        class="flex items-center justify-center rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-content"
+      >
+        {{ percentage }}%
       </div>
     </div>
 
-    <template v-else>
-      <div class="flex items-center gap-2 pt-1">
-        <div class="h-2 flex-1 overflow-hidden rounded-full bg-base-content/15">
-          <div
-            class="h-full rounded-full transition-[width] duration-500 ease-out"
-            :style="{
-              width: `${percentage}%`,
-              background:
-                'linear-gradient(90deg, var(--color-primary), var(--color-secondary))',
-            }"
-          />
-        </div>
-        <div
-          class="flex items-center justify-center rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-content"
-        >
-          {{ percentage }}%
-        </div>
+    <div class="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+      <div class="text-sm text-base-content/60">{{ used }} / {{ total }}</div>
+      <div class="text-sm text-base-content/60">
+        {{ t('expire') }}: {{ expireStr }}
       </div>
-
-      <div class="mt-1.5 flex flex-wrap items-center justify-between gap-2">
-        <div class="text-sm text-base-content/60">{{ used }} / {{ total }}</div>
-        <div class="text-sm text-base-content/60">
-          {{ t('expire') }}: {{ expireStr }}
-        </div>
-      </div>
-    </template>
+    </div>
   </template>
 </template>

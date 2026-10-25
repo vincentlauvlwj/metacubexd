@@ -1,6 +1,8 @@
 import { openDocument } from '@metacubexd/config-editor'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, ref } from 'vue'
+import { computed, effectScope, ref } from 'vue'
+import { useProviderSubscriptionDocument } from '../useProviderSubscriptionDocument'
+import { useProviderSubscriptionEditor } from '../useProviderSubscriptionEditor'
 import { useProxyConfigEditor } from '../useProxyConfigEditor'
 
 vi.mock('../useActiveProfileEditor', () => ({
@@ -28,7 +30,7 @@ function create() {
   const scope = effectScope()
   scopes.push(scope)
   const editor = scope.run(() =>
-    useProxyConfigEditor({ subscriptionUrl: () => url.value }),
+    useProviderSubscriptionEditor(() => url.value),
   )!
   return { editor, url, scope }
 }
@@ -44,6 +46,25 @@ afterEach(() => {
 })
 
 describe('provider subscription node editor', () => {
+  it('uses an injected document session without loading the active profile', async () => {
+    const scope = effectScope()
+    scopes.push(scope)
+    const editor = scope.run(() =>
+      useProxyConfigEditor({
+        ...useProviderSubscriptionDocument(
+          () => 'https://subscription.example',
+        ),
+        available: computed(() => true),
+        fullEditorPath: computed(() => '/profiles'),
+      }),
+    )!
+    expect(await editor.load()).toBe('ready')
+    expect(editor.proxies.value.map((draft) => draft.value.name)).toEqual([
+      '香港',
+      '日本',
+    ])
+  })
+
   it('downloads the body through nginx and extracts only nodes', async () => {
     const { editor } = create()
     expect(await editor.load()).toBe('ready')
@@ -83,7 +104,7 @@ describe('provider subscription node editor', () => {
     expect(await editor.save()).toBe('saved')
     expect(output).toHaveBeenCalledTimes(1)
     expect(output.mock.calls[0]![0]).toMatch(
-      /^proxies:\n  - name: New\n    type: trojan\n/,
+      /^proxies:\n {2}- name: New\n {4}type: trojan\n/,
     )
     expect(openDocument(output.mock.calls[0]![0]).data).toEqual({
       proxies: [

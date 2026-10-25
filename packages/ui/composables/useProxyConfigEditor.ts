@@ -3,9 +3,9 @@ import type {
   ConfigResourceReference,
   ConfigValue,
 } from '@metacubexd/config-editor'
+import type { ProxyEditorSession } from '~/types/proxyEditor'
 import { findResourceReferences } from '@metacubexd/config-editor'
 import { useActiveProfileEditor } from './useActiveProfileEditor'
-import { useProviderSubscriptionDocument } from './useProviderSubscriptionDocument'
 
 export interface RoutingResourceDraft {
   value: ConfigObject
@@ -37,11 +37,9 @@ function draftsFromSection(value: ConfigValue | undefined) {
 }
 
 export function useProxyConfigEditor(
-  options: { subscriptionUrl?: () => string } = {},
+  session: ProxyEditorSession = useActiveProfileEditor(),
+  options: { allowRename?: boolean } = {},
 ) {
-  const session = options.subscriptionUrl
-    ? useProviderSubscriptionDocument(options.subscriptionUrl)
-    : useActiveProfileEditor()
   const state = ref<
     | 'idle'
     | 'ready'
@@ -93,7 +91,7 @@ export function useProxyConfigEditor(
   }
 
   const cancelLoad = () => {
-    if (!('cancelLoad' in session)) return
+    if (!session.cancelLoad) return
     loadVersion++
     session.cancelLoad()
   }
@@ -113,7 +111,7 @@ export function useProxyConfigEditor(
     const current = target.value[index]
     if (!current) return
     const nextValue = cloneValue(value)
-    if (current.originalName && !options.subscriptionUrl)
+    if (current.originalName && !options.allowRename)
       nextValue.name = current.originalName
     target.value = target.value.map((draft, itemIndex) =>
       itemIndex === index ? { ...draft, value: nextValue } : draft,
@@ -174,8 +172,7 @@ export function useProxyConfigEditor(
   }
 
   return {
-    available:
-      'available' in session ? session.available : computed(() => true),
+    available: session.available,
     state,
     proxies,
     groups,
@@ -187,10 +184,7 @@ export function useProxyConfigEditor(
     dirty: session.dirty,
     diagnostics: session.diagnostics,
     errorMessage: session.errorMessage,
-    fullEditorPath:
-      'fullEditorPath' in session
-        ? session.fullEditorPath
-        : computed(() => '/profiles'),
+    fullEditorPath: session.fullEditorPath,
     load,
     cancelLoad,
     add,
