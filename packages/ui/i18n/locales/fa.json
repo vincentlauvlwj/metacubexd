@@ -1,4 +1,7 @@
 {
+  "configureProviderSubscriptionUrl": "تنظیم پیوند اشتراک برای {name}",
+  "configureSubscriptionUrl": "تنظیم پیوند اشتراک",
+  "confirm": "تأیید",
   "pwaUpdateAvailable": "نسخه جدیدی در دسترس است",
   "pwaUpdateReload": "بارگذاری مجدد",
   "lastHour": "ساعت گذشته",

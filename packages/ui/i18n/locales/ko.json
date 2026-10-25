@@ -1,4 +1,7 @@
 {
+  "configureProviderSubscriptionUrl": "{name}의 구독 URL 설정",
+  "configureSubscriptionUrl": "구독 URL 설정",
+  "confirm": "확인",
   "pwaUpdateAvailable": "새 버전을 사용할 수 있습니다",
   "pwaUpdateReload": "새로고침",
   "lastHour": "지난 1시간",

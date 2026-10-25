@@ -64,6 +64,30 @@ const {
 
 const activeTab = ref<'proxies' | 'proxyProviders'>('proxies')
 const settingsModal = ref<{ open: () => void; close: () => void }>()
+const subscriptionModal = ref<{ open: () => void; close: () => void }>()
+const subscriptionProviderName = ref('')
+const subscriptionUrl = ref('')
+
+function openSubscriptionModal(providerName: string) {
+  subscriptionProviderName.value = providerName
+  subscriptionUrl.value =
+    localStorage.getItem(`proxy-provider-subscription-url:${providerName}`) ??
+    ''
+  subscriptionModal.value?.open()
+}
+
+function saveSubscriptionUrl() {
+  const url = subscriptionUrl.value.trim()
+  const key = `proxy-provider-subscription-url:${subscriptionProviderName.value}`
+
+  if (url) {
+    localStorage.setItem(key, url)
+  } else {
+    localStorage.removeItem(key)
+  }
+  subscriptionModal.value?.close()
+}
+
 const connectivityModal = ref<{ open: () => void; close: () => void }>()
 const proxyConfigEditor = ref<{ open: () => Promise<void> | void }>()
 const proxyGroupsWrapper = ref<{ isTwoColumns: boolean }>()
@@ -714,6 +738,20 @@ const ProxyProviderTitle = defineComponent({
                       },
                     }),
                 },
+              ),
+              h(
+                Button,
+                {
+                  class:
+                    'flex items-center justify-center w-9 h-9 rounded-lg bg-base-content/6 border border-base-content/8 text-base-content/60 transition-all duration-200 hover:bg-primary/15 hover:border-primary/30 hover:text-primary hover:-translate-y-px hover:shadow-lg hover:shadow-primary/15 active:translate-y-0',
+                  title: t('configureSubscriptionUrl'),
+                  'aria-label': t('configureSubscriptionUrl'),
+                  onClick: (e: MouseEvent) => {
+                    e.stopPropagation()
+                    openSubscriptionModal(props.provider.name)
+                  },
+                },
+                { default: () => h(IconSettings, { size: 18 }) },
               ),
             ]),
           ],
@@ -1405,6 +1443,48 @@ const ProviderProxyNodes = defineComponent({
           </button>
         </div>
       </div>
+    </Modal>
+
+    <Modal
+      ref="subscriptionModal"
+      :title="
+        t('configureProviderSubscriptionUrl', {
+          name: subscriptionProviderName,
+        })
+      "
+    >
+      <template #icon>
+        <IconSettings :size="24" />
+      </template>
+
+      <form
+        id="provider-subscription-form"
+        @submit.prevent="saveSubscriptionUrl"
+      >
+        <input
+          v-model="subscriptionUrl"
+          type="text"
+          inputmode="url"
+          class="input w-full border-base-content/20 bg-base-100 text-base-content focus:border-primary focus:outline-primary"
+          :aria-label="t('profilesUrl')"
+          :placeholder="t('profilesUrl')"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </form>
+
+      <template #actions>
+        <Button class="btn-ghost" @click="subscriptionModal?.close()">
+          {{ t('cancel') }}
+        </Button>
+        <Button
+          type="submit"
+          form="provider-subscription-form"
+          class="btn-primary"
+        >
+          {{ t('confirm') }}
+        </Button>
+      </template>
     </Modal>
 
     <!-- Connectivity Board Modal -->

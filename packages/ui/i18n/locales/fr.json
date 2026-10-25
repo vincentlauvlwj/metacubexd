@@ -1,4 +1,7 @@
 {
+  "configureProviderSubscriptionUrl": "Configurer l’URL d’abonnement pour {name}",
+  "configureSubscriptionUrl": "Configurer l’URL d’abonnement",
+  "confirm": "Confirmer",
   "pwaUpdateAvailable": "Une nouvelle version est disponible",
   "pwaUpdateReload": "Recharger",
   "lastHour": "Dernière heure",

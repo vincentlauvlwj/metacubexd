@@ -1,4 +1,7 @@
 {
+  "configureProviderSubscriptionUrl": "Настроить ссылку подписки для {name}",
+  "configureSubscriptionUrl": "Настроить ссылку подписки",
+  "confirm": "Подтвердить",
   "pwaUpdateAvailable": "Доступна новая версия",
   "pwaUpdateReload": "Обновить",
   "lastHour": "За час",
