@@ -656,9 +656,10 @@
   "quality": "کیفیت",
   "sortDefault": "پیش‌فرض",
   "providerSubscriptionEditorTitle": "ویرایش گره‌های اشتراک {name}",
-  "providerSubscriptionEditorHint": "گره‌های اشتراک را ویرایش کنید. هنگام ذخیره، YAML شامل فقط تنظیمات گره‌ها در کنسول مرورگر نمایش داده می‌شود.",
-  "providerSubscriptionExported": "YAML گره‌ها در کنسول مرورگر نمایش داده شد",
+  "providerSubscriptionEditorHint": "گره‌های اشتراک را ویرایش کنید. با ذخیره، YAML گره‌ها با نام {name}.yaml بارگذاری می‌شود.",
+  "providerSubscriptionExported": "YAML گره‌ها بارگذاری شد",
   "providerSubscriptionNodes": "گره‌های اشتراک",
   "providerSubscriptionInvalid": "اشتراک باید شامل آرایه proxies از اشیای تنظیمات گره باشد.",
+  "providerSubscriptionUploadTimeout": "زمان بارگذاری پیکربندی گره‌ها به پایان رسید. دوباره تلاش کنید.",
   "providerSubscriptionTimeout": "زمان دانلود اشتراک به پایان رسید. دوباره تلاش کنید."
 }

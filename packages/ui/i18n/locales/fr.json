@@ -656,9 +656,10 @@
   "quality": "Qualité",
   "sortDefault": "Défaut",
   "providerSubscriptionEditorTitle": "Modifier les nœuds de {name}",
-  "providerSubscriptionEditorHint": "Modifiez les nœuds de l’abonnement. L’enregistrement affiche un YAML contenant uniquement les nœuds dans la console du navigateur.",
-  "providerSubscriptionExported": "Le YAML des nœuds a été affiché dans la console du navigateur",
+  "providerSubscriptionEditorHint": "Modifiez les nœuds de l’abonnement. L’enregistrement téléverse le YAML des nœuds sous le nom {name}.yaml.",
+  "providerSubscriptionExported": "Le YAML des nœuds a été téléversé",
   "providerSubscriptionNodes": "Nœuds de l’abonnement",
   "providerSubscriptionInvalid": "L’abonnement doit contenir un tableau proxies composé d’objets de configuration de nœuds.",
+  "providerSubscriptionUploadTimeout": "Le téléversement de la configuration des nœuds a expiré. Réessayez.",
   "providerSubscriptionTimeout": "Le téléchargement a expiré. Veuillez réessayer."
 }

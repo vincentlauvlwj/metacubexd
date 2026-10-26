@@ -27,12 +27,16 @@ const fetchMock = vi.fn()
 
 function create() {
   const url = ref('https://subscription.example/api?token=a%2Fb&x=1&x=2')
+  const name = ref('机场 A')
   const scope = effectScope()
   scopes.push(scope)
   const editor = scope.run(() =>
-    useProviderSubscriptionEditor(() => url.value),
+    useProviderSubscriptionEditor(
+      () => url.value,
+      () => name.value,
+    ),
   )!
-  return { editor, url, scope }
+  return { editor, url, name, scope }
 }
 
 beforeEach(() => {
@@ -53,6 +57,7 @@ describe('provider subscription node editor', () => {
       useProxyConfigEditor({
         ...useProviderSubscriptionDocument(
           () => 'https://subscription.example',
+          () => 'provider',
         ),
         available: computed(() => true),
         fullEditorPath: computed(() => '/profiles'),
@@ -131,8 +136,7 @@ describe('provider subscription node editor', () => {
     expect(editor.proxies.value[0]?.value.name).toBe('🇯🇵 JP-Narita-01')
   })
 
-  it('exports added, renamed, reordered and deleted nodes without other sections', async () => {
-    const output = vi.spyOn(console, 'log').mockImplementation(() => {})
+  it('uploads added, renamed, reordered and deleted nodes without other sections', async () => {
     const { editor } = create()
     await editor.load()
     editor.update('proxy', 1, {
@@ -151,11 +155,14 @@ describe('provider subscription node editor', () => {
     expect(editor.remove('proxy', 1)).toBe(true)
     expect(editor.dirty.value).toBe(true)
     expect(await editor.save()).toBe('saved')
-    expect(output).toHaveBeenCalledTimes(1)
-    expect(output.mock.calls[0]![0]).toMatch(
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      'http://clash.home.liuwj.me/proxy/provider/%E6%9C%BA%E5%9C%BA%20A.yaml',
+      expect.objectContaining({ method: 'PUT', body: expect.any(String) }),
+    )
+    expect(fetchMock.mock.calls[1]![1].body).toMatch(
       /^proxies:\n {2}- name: New\n {4}type: trojan\n/,
     )
-    expect(openDocument(output.mock.calls[0]![0]).data).toEqual({
+    expect(openDocument(fetchMock.mock.calls[1]![1].body).data).toEqual({
       proxies: [
         {
           name: 'New',
@@ -177,16 +184,19 @@ describe('provider subscription node editor', () => {
     expect(editor.dirty.value).toBe(false)
   })
 
-  it('outputs unchanged nodes and an explicitly emptied list', async () => {
-    const output = vi.spyOn(console, 'log').mockImplementation(() => {})
+  it('uploads unchanged nodes and an explicitly emptied list', async () => {
     const { editor } = create()
     await editor.load()
     expect(await editor.save()).toBe('saved')
-    expect(openDocument(output.mock.calls[0]![0]).data.proxies).toHaveLength(2)
+    expect(
+      openDocument(fetchMock.mock.calls[1]![1].body).data.proxies,
+    ).toHaveLength(2)
     editor.remove('proxy', 1)
     editor.remove('proxy', 0)
     await editor.save()
-    expect(openDocument(output.mock.calls[1]![0]).data).toEqual({ proxies: [] })
+    expect(openDocument(fetchMock.mock.calls[2]![1].body).data).toEqual({
+      proxies: [],
+    })
   })
 
   it.each([
@@ -198,23 +208,140 @@ describe('provider subscription node editor', () => {
     'dns: {}',
   ])('rejects invalid subscription content: %s', async (body) => {
     fetchMock.mockResolvedValue(new Response(body))
-    const output = vi.spyOn(console, 'log').mockImplementation(() => {})
     const { editor } = create()
     expect(await editor.load()).toBe('error')
     expect(editor.proxies.value).toEqual([])
     expect(await editor.save()).toBe('error')
-    expect(output).not.toHaveBeenCalled()
+    expect(
+      fetchMock.mock.calls.filter(([, options]) => options?.method === 'PUT'),
+    ).toHaveLength(0)
   })
 
-  it('blocks export of duplicate names and permits correction', async () => {
-    const output = vi.spyOn(console, 'log').mockImplementation(() => {})
+  it('blocks upload of duplicate names and permits correction', async () => {
     const { editor } = create()
     await editor.load()
     editor.add('proxy', { name: '🇭🇰 香港', type: 'trojan' })
     expect(await editor.save()).toBe('invalid')
-    expect(output).not.toHaveBeenCalled()
+    expect(
+      fetchMock.mock.calls.filter(([, options]) => options?.method === 'PUT'),
+    ).toHaveLength(0)
     editor.update('proxy', 2, { name: 'unique', type: 'trojan' })
     expect(await editor.save()).toBe('saved')
+  })
+
+  it('keeps edits on upload failure and allows retry', async () => {
+    const { editor } = create()
+    await editor.load()
+    editor.update('proxy', 0, {
+      ...editor.proxies.value[0]!.value,
+      name: 'edited',
+    })
+    fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }))
+    expect(await editor.save()).toBe('error')
+    expect(editor.errorMessage.value).toContain('500')
+    expect(editor.dirty.value).toBe(true)
+    expect(editor.saving.value).toBe(false)
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    expect(await editor.save()).toBe('saved')
+    expect(editor.dirty.value).toBe(false)
+    expect(editor.errorMessage.value).toBe('')
+  })
+
+  it('reports network failures without losing edits', async () => {
+    const { editor } = create()
+    await editor.load()
+    editor.update('proxy', 0, {
+      ...editor.proxies.value[0]!.value,
+      name: 'edited',
+    })
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    expect(await editor.save()).toBe('error')
+    expect(editor.errorMessage.value).toBe('Failed to fetch')
+    expect(editor.dirty.value).toBe(true)
+    expect(editor.saving.value).toBe(false)
+  })
+
+  it.each(['bad/name', 'bad\\name', '', 'bad\u0000name'])(
+    'rejects invalid provider filenames: %s',
+    async (invalidName) => {
+      const { editor, name } = create()
+      await editor.load()
+      name.value = invalidName
+      expect(await editor.save()).toBe('error')
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(editor.errorMessage.value).toContain('filename')
+    },
+  )
+
+  it('tracks upload state and prevents concurrent uploads', async () => {
+    const output = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const { editor } = create()
+    await editor.load()
+    let resolve!: (response: Response) => void
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done
+        }),
+    )
+    const pending = editor.save()
+    expect(editor.saving.value).toBe(true)
+    expect(await editor.save()).toBe('error')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1]![1]).toEqual(
+      expect.objectContaining({
+        headers: { 'Content-Type': 'application/yaml; charset=utf-8' },
+        credentials: 'omit',
+        redirect: 'error',
+        signal: expect.any(AbortSignal),
+      }),
+    )
+    resolve(new Response(null, { status: 201 }))
+    expect(await pending).toBe('saved')
+    expect(editor.saving.value).toBe(false)
+    expect(output).not.toHaveBeenCalled()
+  })
+
+  it('aborts uploads on close and ignores a late response', async () => {
+    const { editor } = create()
+    await editor.load()
+    let resolve!: (response: Response) => void
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done
+        }),
+    )
+    const pending = editor.save()
+    editor.cancelLoad()
+    expect(fetchMock.mock.calls[1]![1].signal.aborted).toBe(true)
+    resolve(new Response(null, { status: 204 }))
+    expect(await pending).toBe('error')
+    expect(editor.saving.value).toBe(false)
+  })
+
+  it('times out uploads and preserves the edited document', async () => {
+    vi.useFakeTimers()
+    const { editor } = create()
+    await editor.load()
+    editor.update('proxy', 0, {
+      ...editor.proxies.value[0]!.value,
+      name: 'edited',
+    })
+    fetchMock.mockImplementationOnce(
+      (_, options) =>
+        new Promise((_, reject) => {
+          options.signal.addEventListener('abort', () =>
+            reject(new Error('aborted')),
+          )
+        }),
+    )
+    const pending = editor.save()
+    await vi.advanceTimersByTimeAsync(30000)
+    expect(await pending).toBe('error')
+    expect(editor.dirty.value).toBe(true)
+    expect(editor.errorMessage.value).toBe('providerSubscriptionUploadTimeout')
+    expect(editor.saving.value).toBe(false)
   })
 
   it('clears previous nodes after HTTP failure and can retry', async () => {

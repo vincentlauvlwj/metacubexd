@@ -5,7 +5,10 @@ import { useProviderSubscriptionEditor } from '~/composables/useProviderSubscrip
 const { t } = useI18n()
 const providerName = ref('')
 const subscriptionUrl = ref('')
-const editor = useProviderSubscriptionEditor(() => subscriptionUrl.value)
+const editor = useProviderSubscriptionEditor(
+  () => subscriptionUrl.value,
+  () => providerName.value,
+)
 const configEditor = ref<InstanceType<typeof ProxyConfigEditor>>()
 
 async function open(provider: { name: string; url: string }) {
@@ -23,7 +26,7 @@ defineExpose({ open })
     ref="configEditor"
     :editor="editor"
     :title="t('providerSubscriptionEditorTitle', { name: providerName })"
-    :hint="t('providerSubscriptionEditorHint')"
+    :hint="t('providerSubscriptionEditorHint', { name: providerName })"
     :nodes-title="t('providerSubscriptionNodes')"
     :saved-message="t('providerSubscriptionExported')"
     nodes-only

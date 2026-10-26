@@ -656,9 +656,10 @@
   "quality": "Quality",
   "sortDefault": "Default",
   "providerSubscriptionEditorTitle": "Edit subscription nodes for {name}",
-  "providerSubscriptionEditorHint": "Edit the subscription nodes. Saving outputs YAML containing only node configurations to the browser console.",
-  "providerSubscriptionExported": "Node YAML has been written to the browser console",
+  "providerSubscriptionEditorHint": "Edit the subscription nodes. Saving uploads the node YAML as {name}.yaml.",
+  "providerSubscriptionExported": "Node YAML uploaded",
   "providerSubscriptionNodes": "Subscription nodes",
   "providerSubscriptionInvalid": "The subscription must contain a proxies array of node configuration objects.",
+  "providerSubscriptionUploadTimeout": "Node configuration upload timed out. Please retry.",
   "providerSubscriptionTimeout": "Subscription download timed out. Please retry."
 }

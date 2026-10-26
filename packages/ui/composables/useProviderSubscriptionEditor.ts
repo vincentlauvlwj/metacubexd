@@ -3,10 +3,13 @@ import { useProviderSubscriptionDocument } from './useProviderSubscriptionDocume
 import { useProxyConfigEditor } from './useProxyConfigEditor'
 
 /** Adapt subscription documents to the shared node editor. */
-export function useProviderSubscriptionEditor(getUrl: () => string) {
+export function useProviderSubscriptionEditor(
+  getUrl: () => string,
+  getName: () => string,
+) {
   return useProxyConfigEditor(
     {
-      ...useProviderSubscriptionDocument(getUrl),
+      ...useProviderSubscriptionDocument(getUrl, getName),
       available: computed(() => true),
       fullEditorPath: computed(() => '/profiles'),
     },
