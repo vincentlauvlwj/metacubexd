@@ -29,6 +29,7 @@ defineExpose({ open })
     :hint="t('providerSubscriptionEditorHint', { name: providerName })"
     :nodes-title="t('providerSubscriptionNodes')"
     :saved-message="t('providerSubscriptionExported')"
+    :saved-description="editor.applyResult.value?.output"
     nodes-only
     allow-rename
     retry-on-error

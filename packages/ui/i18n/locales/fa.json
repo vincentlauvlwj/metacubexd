@@ -656,10 +656,12 @@
   "quality": "کیفیت",
   "sortDefault": "پیش‌فرض",
   "providerSubscriptionEditorTitle": "ویرایش گره‌های اشتراک {name}",
-  "providerSubscriptionEditorHint": "گره‌های اشتراک را ویرایش کنید. با ذخیره، YAML گره‌ها با نام {name}.yaml بارگذاری می‌شود.",
-  "providerSubscriptionExported": "YAML گره‌ها بارگذاری شد",
+  "providerSubscriptionEditorHint": "گره‌های اشتراک را ویرایش کنید. با ذخیره، {name}.yaml بارگذاری و اسکریپت پردازش سرور اجرا می‌شود.",
+  "providerSubscriptionExported": "YAML گره‌ها بارگذاری و پردازش شد",
   "providerSubscriptionNodes": "گره‌های اشتراک",
   "providerSubscriptionInvalid": "اشتراک باید شامل آرایه proxies از اشیای تنظیمات گره باشد.",
+  "providerSubscriptionApplyFailed": "فایل بارگذاری شد، اما اجرای اسکریپت پردازش ناموفق بود. دوباره تلاش کنید.",
+  "providerSubscriptionApplyTimeout": "فایل بارگذاری شد، اما زمان درخواست پردازش به پایان رسید. پیش از تلاش مجدد، نتیجه را در سرور بررسی کنید.",
   "providerSubscriptionUploadTimeout": "زمان بارگذاری پیکربندی گره‌ها به پایان رسید. دوباره تلاش کنید.",
   "providerSubscriptionTimeout": "زمان دانلود اشتراک به پایان رسید. دوباره تلاش کنید."
 }

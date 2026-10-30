@@ -29,6 +29,7 @@ const props = defineProps<{
   hint?: string
   nodesTitle?: string
   savedMessage?: string
+  savedDescription?: string
   nodesOnly?: boolean
   allowRename?: boolean
   retryOnError?: boolean
@@ -315,7 +316,9 @@ function removeResource(kind: ResourceKind, index: number) {
 async function saveEditor() {
   const result = await editor.save()
   if (result === 'saved' || result === 'unchanged') {
-    toast.success(props.savedMessage ?? t('proxyConfigSaved'))
+    toast.success(props.savedMessage ?? t('proxyConfigSaved'), {
+      description: props.savedDescription || undefined,
+    })
     editorModal.value?.close(true)
     emit('saved')
     return

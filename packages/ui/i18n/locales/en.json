@@ -656,10 +656,12 @@
   "quality": "Quality",
   "sortDefault": "Default",
   "providerSubscriptionEditorTitle": "Edit subscription nodes for {name}",
-  "providerSubscriptionEditorHint": "Edit the subscription nodes. Saving uploads the node YAML as {name}.yaml.",
-  "providerSubscriptionExported": "Node YAML uploaded",
+  "providerSubscriptionEditorHint": "Edit the subscription nodes. Saving uploads {name}.yaml and runs the server processing script.",
+  "providerSubscriptionExported": "Node YAML uploaded and processed",
   "providerSubscriptionNodes": "Subscription nodes",
   "providerSubscriptionInvalid": "The subscription must contain a proxies array of node configuration objects.",
+  "providerSubscriptionApplyFailed": "The file was uploaded, but the processing script failed. Please retry.",
+  "providerSubscriptionApplyTimeout": "The file was uploaded, but the processing request timed out. Check the server result before retrying.",
   "providerSubscriptionUploadTimeout": "Node configuration upload timed out. Please retry.",
   "providerSubscriptionTimeout": "Subscription download timed out. Please retry."
 }

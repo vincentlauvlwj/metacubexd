@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Toaster } from 'vue-sonner'
+import { modalToastTarget } from '~/utils/modalToastTarget'
 import 'vue-sonner/style.css'
 
 useHead({
@@ -49,5 +50,12 @@ onMounted(() => nextTick(syncToasterTheme))
   <!-- vue-sonner toast outlet (desktop control surface uses toasts). Top-center
        keeps clear of the bottom-right traffic widget + the mobile bottom nav;
        theme is bound to the active daisyUI theme. -->
-  <Toaster position="top-center" :theme="toasterTheme" rich-colors />
+  <Teleport :to="modalToastTarget">
+    <Toaster
+      position="top-center"
+      :theme="toasterTheme"
+      :toast-options="{ descriptionClass: 'whitespace-pre-wrap' }"
+      rich-colors
+    />
+  </Teleport>
 </template>

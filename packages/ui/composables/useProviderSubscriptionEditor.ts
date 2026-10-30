@@ -7,12 +7,14 @@ export function useProviderSubscriptionEditor(
   getUrl: () => string,
   getName: () => string,
 ) {
-  return useProxyConfigEditor(
+  const session = useProviderSubscriptionDocument(getUrl, getName)
+  const editor = useProxyConfigEditor(
     {
-      ...useProviderSubscriptionDocument(getUrl, getName),
+      ...session,
       available: computed(() => true),
       fullEditorPath: computed(() => '/profiles'),
     },
     { allowRename: true },
   )
+  return { ...editor, applyResult: session.applyResult }
 }

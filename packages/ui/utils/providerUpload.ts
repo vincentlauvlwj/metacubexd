@@ -1,4 +1,5 @@
 const PROVIDER_UPLOAD_BASE = 'http://clash.home.liuwj.me/proxy/provider/'
+export const PROVIDER_APPLY_URL = 'http://clash.home.liuwj.me/proxy/sync'
 
 export function toProviderUploadUrl(name: string): string {
   // A provider is one file, never a subdirectory (nginx decodes URL paths).

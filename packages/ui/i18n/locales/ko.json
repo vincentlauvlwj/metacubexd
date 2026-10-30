@@ -656,10 +656,12 @@
   "quality": "품질",
   "sortDefault": "기본",
   "providerSubscriptionEditorTitle": "{name} 구독 노드 편집",
-  "providerSubscriptionEditorHint": "구독 노드를 편집합니다. 저장하면 노드 YAML을 {name}.yaml로 업로드합니다.",
-  "providerSubscriptionExported": "노드 YAML이 업로드되었습니다",
+  "providerSubscriptionEditorHint": "구독 노드를 편집합니다. 저장하면 {name}.yaml을 업로드하고 서버 처리 스크립트를 실행합니다.",
+  "providerSubscriptionExported": "노드 YAML 업로드 및 처리 완료",
   "providerSubscriptionNodes": "구독 노드",
   "providerSubscriptionInvalid": "구독에는 노드 설정 객체로 구성된 proxies 배열이 있어야 합니다.",
+  "providerSubscriptionApplyFailed": "파일은 업로드되었지만 처리 스크립트가 실패했습니다. 다시 시도하세요.",
+  "providerSubscriptionApplyTimeout": "파일은 업로드되었지만 처리 요청 시간이 초과되었습니다. 서버 결과를 확인한 후 다시 시도하세요.",
   "providerSubscriptionUploadTimeout": "노드 설정 업로드 시간이 초과되었습니다. 다시 시도하세요.",
   "providerSubscriptionTimeout": "구독 다운로드 시간이 초과되었습니다. 다시 시도하세요."
 }

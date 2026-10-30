@@ -600,10 +600,12 @@
   "quality": "Качество",
   "sortDefault": "По умолчанию",
   "providerSubscriptionEditorTitle": "Редактировать узлы подписки {name}",
-  "providerSubscriptionEditorHint": "Измените узлы подписки. При сохранении YAML узлов загружается как {name}.yaml.",
-  "providerSubscriptionExported": "YAML узлов загружен",
+  "providerSubscriptionEditorHint": "Измените узлы подписки. При сохранении загружается {name}.yaml и запускается скрипт обработки на сервере.",
+  "providerSubscriptionExported": "YAML узлов загружен и обработан",
   "providerSubscriptionNodes": "Узлы подписки",
   "providerSubscriptionInvalid": "Подписка должна содержать массив proxies с объектами настроек узлов.",
+  "providerSubscriptionApplyFailed": "Файл загружен, но скрипт обработки завершился с ошибкой. Повторите попытку.",
+  "providerSubscriptionApplyTimeout": "Файл загружен, но время запроса обработки истекло. Проверьте результат на сервере перед повторной попыткой.",
   "providerSubscriptionUploadTimeout": "Время загрузки конфигурации узлов истекло. Повторите попытку.",
   "providerSubscriptionTimeout": "Время загрузки подписки истекло. Повторите попытку."
 }

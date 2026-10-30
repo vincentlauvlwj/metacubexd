@@ -41,7 +41,11 @@ function create() {
 
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
-  fetchMock.mockReset().mockResolvedValue(new Response(yaml))
+  fetchMock
+    .mockReset()
+    .mockImplementation((_, options) =>
+      Promise.resolve(new Response(options?.method ? '' : yaml)),
+    )
 })
 afterEach(() => {
   scopes.splice(0).forEach((scope) => scope.stop())
@@ -155,7 +159,8 @@ describe('provider subscription node editor', () => {
     expect(editor.remove('proxy', 1)).toBe(true)
     expect(editor.dirty.value).toBe(true)
     expect(await editor.save()).toBe('saved')
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
       'http://clash.home.liuwj.me/proxy/provider/%E6%9C%BA%E5%9C%BA%20A.yaml',
       expect.objectContaining({ method: 'PUT', body: expect.any(String) }),
     )
@@ -194,7 +199,7 @@ describe('provider subscription node editor', () => {
     editor.remove('proxy', 1)
     editor.remove('proxy', 0)
     await editor.save()
-    expect(openDocument(fetchMock.mock.calls[2]![1].body).data).toEqual({
+    expect(openDocument(fetchMock.mock.calls[3]![1].body).data).toEqual({
       proxies: [],
     })
   })
@@ -227,6 +232,172 @@ describe('provider subscription node editor', () => {
     ).toHaveLength(0)
     editor.update('proxy', 2, { name: 'unique', type: 'trojan' })
     expect(await editor.save()).toBe('saved')
+  })
+
+  it('waits for upload success before applying and keeps saving until apply completes', async () => {
+    const { editor } = create()
+    await editor.load()
+    let completeUpload!: (response: Response) => void
+    let completeApply!: (response: Response) => void
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          completeUpload = resolve
+        }),
+    )
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          completeApply = resolve
+        }),
+    )
+    const pending = editor.save()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    completeUpload(new Response(null, { status: 201 }))
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      'http://clash.home.liuwj.me/proxy/sync',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'omit',
+        redirect: 'error',
+        signal: expect.any(AbortSignal),
+      }),
+    )
+    expect(fetchMock.mock.calls[2]![1].body).toBeUndefined()
+    expect(editor.saving.value).toBe(true)
+    completeApply(new Response(null, { status: 200 }))
+    expect(await pending).toBe('saved')
+    expect(editor.saving.value).toBe(false)
+  })
+
+  it.each([200, 500])(
+    'preserves multiline script output for display with HTTP %s',
+    async (status) => {
+      const { editor } = create()
+      await editor.load()
+      const output = '正在处理节点…\n<script>alert(1)</script>\n完成\n\n'
+      fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+      fetchMock.mockResolvedValueOnce(new Response(output, { status }))
+      expect(await editor.save()).toBe(status === 200 ? 'saved' : 'error')
+      expect(editor.applyResult.value).toEqual({
+        output,
+        success: status === 200,
+      })
+      if (status !== 200) expect(editor.errorMessage.value).toContain(output)
+    },
+  )
+
+  it('keeps an empty script response as a completed result', async () => {
+    const { editor } = create()
+    await editor.load()
+    expect(await editor.save()).toBe('saved')
+    expect(editor.applyResult.value).toEqual({ output: '', success: true })
+  })
+
+  it('clears previous output on retry and on a new subscription load', async () => {
+    const { editor } = create()
+    await editor.load()
+    await editor.save()
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    expect(await editor.save()).toBe('error')
+    expect(editor.applyResult.value).toBeNull()
+    await editor.save()
+    expect(editor.applyResult.value).not.toBeNull()
+    await editor.load()
+    expect(editor.applyResult.value).toBeNull()
+  })
+
+  it('ignores output received after the editor was closed', async () => {
+    const { editor } = create()
+    await editor.load()
+    let resolveBody!: (text: string) => void
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    const body = new Promise<string>((resolve) => {
+      resolveBody = resolve
+    })
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: () => body })
+    const pending = editor.save()
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+    editor.cancelLoad()
+    resolveBody('late output')
+    expect(await pending).toBe('error')
+    expect(editor.applyResult.value).toBeNull()
+  })
+
+  it('does not execute the script when upload fails', async () => {
+    const { editor } = create()
+    await editor.load()
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 500 }))
+    expect(await editor.save()).toBe('error')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it.each(['http', 'network'])(
+    'preserves edits on apply failure and allows retry: %s',
+    async (failure) => {
+      const { editor } = create()
+      await editor.load()
+      editor.update('proxy', 0, {
+        ...editor.proxies.value[0]!.value,
+        name: 'edited',
+      })
+      fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+      if (failure === 'http') {
+        fetchMock.mockResolvedValueOnce(new Response(null, { status: 500 }))
+      } else {
+        fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      }
+      expect(await editor.save()).toBe('error')
+      expect(editor.errorMessage.value).toContain(
+        'providerSubscriptionApplyFailed',
+      )
+      expect(editor.dirty.value).toBe(true)
+      expect(editor.saving.value).toBe(false)
+      expect(await editor.save()).toBe('saved')
+      expect(editor.dirty.value).toBe(false)
+      expect(editor.errorMessage.value).toBe('')
+    },
+  )
+
+  it('cancels an in-flight apply request when closed', async () => {
+    const { editor } = create()
+    await editor.load()
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    let resolve!: (response: Response) => void
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done
+        }),
+    )
+    const pending = editor.save()
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+    editor.cancelLoad()
+    expect(fetchMock.mock.calls[2]![1].signal.aborted).toBe(true)
+    resolve(new Response(null, { status: 200 }))
+    expect(await pending).toBe('error')
+    expect(editor.saving.value).toBe(false)
+  })
+
+  it('reports an apply timeout separately from upload timeout', async () => {
+    vi.useFakeTimers()
+    const { editor } = create()
+    await editor.load()
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    fetchMock.mockImplementationOnce(
+      (_, options) =>
+        new Promise((_, reject) => {
+          options.signal.addEventListener('abort', () =>
+            reject(new Error('aborted')),
+          )
+        }),
+    )
+    const pending = editor.save()
+    await vi.advanceTimersByTimeAsync(30000)
+    expect(await pending).toBe('error')
+    expect(editor.errorMessage.value).toBe('providerSubscriptionApplyTimeout')
+    expect(editor.saving.value).toBe(false)
   })
 
   it('keeps edits on upload failure and allows retry', async () => {

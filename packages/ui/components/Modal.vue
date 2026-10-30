@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { IconX } from '@tabler/icons-vue'
+import {
+  registerToastModal,
+  unregisterToastModal,
+} from '~/utils/modalToastTarget'
 
 interface Props {
   title?: string
@@ -46,6 +50,7 @@ function open() {
   // Cancel a pending teardown so a fast close -> re-open doesn't self-close.
   cancelCloseTimer()
   dialogRef.value?.showModal()
+  if (dialogRef.value) registerToastModal(dialogRef.value)
   isRendered.value = true
   // Next frame: flip to the open state so the entrance transition runs.
   requestAnimationFrame(() => {
@@ -62,6 +67,7 @@ function close(force = false) {
     () => {
       closeTimer = undefined
       dialogRef.value?.close()
+      if (dialogRef.value) unregisterToastModal(dialogRef.value)
       isRendered.value = false
       emit('close')
     },
@@ -72,6 +78,11 @@ function close(force = false) {
 function requestClose() {
   close(false)
 }
+
+onBeforeUnmount(() => {
+  cancelCloseTimer()
+  if (dialogRef.value) unregisterToastModal(dialogRef.value)
+})
 
 const modalSizeClass = computed(() =>
   props.size === 'xl' ? 'max-w-6xl' : 'max-w-2xl',

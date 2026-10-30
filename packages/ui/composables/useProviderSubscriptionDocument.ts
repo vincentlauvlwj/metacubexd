@@ -5,7 +5,7 @@ import {
   validateDocument,
 } from '@metacubexd/config-editor'
 import { computed, onScopeDispose, ref, shallowRef } from 'vue'
-import { toProviderUploadUrl } from '~/utils/providerUpload'
+import { PROVIDER_APPLY_URL, toProviderUploadUrl } from '~/utils/providerUpload'
 import { prefixNodeRegionFlag } from '~/utils/subscriptionNodeNames'
 import { toSubscriptionProxyUrl } from '~/utils/subscriptionProxy'
 
@@ -20,6 +20,7 @@ export function useProviderSubscriptionDocument(
   const loading = ref(false)
   const saving = ref(false)
   const errorMessage = ref('')
+  const applyResult = ref<{ output: string; success: boolean } | null>(null)
   let request: AbortController | undefined
   let upload: AbortController | undefined
   const data = computed(() => document.value?.data ?? null)
@@ -43,6 +44,7 @@ export function useProviderSubscriptionDocument(
     cancelLoad()
     document.value = null
     initial.value = ''
+    applyResult.value = null
     errorMessage.value = ''
     loading.value = true
     const controller = new AbortController()
@@ -111,8 +113,10 @@ export function useProviderSubscriptionDocument(
     const controller = new AbortController()
     upload = controller
     saving.value = true
+    applyResult.value = null
     errorMessage.value = ''
-    const timeout = setTimeout(() => controller.abort(), 30000)
+    let applying = false
+    let timeout = setTimeout(() => controller.abort(), 30000)
     try {
       const response = await fetch(toProviderUploadUrl(getName()), {
         method: 'PUT',
@@ -126,15 +130,43 @@ export function useProviderSubscriptionDocument(
       if (controller.signal.aborted)
         throw new Error(t('providerSubscriptionUploadTimeout'))
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      applying = true
+      clearTimeout(timeout)
+      timeout = setTimeout(() => controller.abort(), 30000)
+      const applied = await fetch(PROVIDER_APPLY_URL, {
+        method: 'POST',
+        credentials: 'omit',
+        redirect: 'error',
+        signal: controller.signal,
+      })
+      if (upload !== controller) return 'error' as const
+      const output = await applied.text()
+      if (upload !== controller) return 'error' as const
+      if (controller.signal.aborted)
+        throw new Error(t('providerSubscriptionApplyTimeout'))
+      applyResult.value = { output, success: applied.ok }
+      if (!applied.ok) throw new Error(`HTTP ${applied.status}`)
       initial.value = JSON.stringify(current.data)
       return 'saved' as const
     } catch (error) {
       if (upload !== controller) return 'error' as const
+      const detail =
+        error instanceof Error ? error.message : t('proxyConfigSaveFailed')
       errorMessage.value = controller.signal.aborted
-        ? t('providerSubscriptionUploadTimeout')
-        : error instanceof Error
-          ? error.message
-          : t('proxyConfigSaveFailed')
+        ? t(
+            applying
+              ? 'providerSubscriptionApplyTimeout'
+              : 'providerSubscriptionUploadTimeout',
+          )
+        : applying
+          ? [
+              t('providerSubscriptionApplyFailed'),
+              detail,
+              applyResult.value?.output,
+            ]
+              .filter(Boolean)
+              .join('\n')
+          : detail
       return 'error' as const
     } finally {
       clearTimeout(timeout)
@@ -153,6 +185,7 @@ export function useProviderSubscriptionDocument(
     loading,
     saving,
     errorMessage,
+    applyResult,
     load,
     save,
     replaceSections,

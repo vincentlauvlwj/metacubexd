@@ -656,10 +656,12 @@
   "quality": "品質",
   "sortDefault": "デフォルト",
   "providerSubscriptionEditorTitle": "{name} のサブスクリプションノードを編集",
-  "providerSubscriptionEditorHint": "ノードを編集します。保存するとノードの YAML を {name}.yaml としてアップロードします。",
-  "providerSubscriptionExported": "ノードの YAML をアップロードしました",
+  "providerSubscriptionEditorHint": "ノードを編集します。保存すると {name}.yaml をアップロードし、サーバーの処理スクリプトを実行します。",
+  "providerSubscriptionExported": "ノードの YAML をアップロードして処理しました",
   "providerSubscriptionNodes": "サブスクリプションノード",
   "providerSubscriptionInvalid": "サブスクリプションには、ノード設定オブジェクトの proxies 配列が必要です。",
+  "providerSubscriptionApplyFailed": "ファイルはアップロードされましたが、処理スクリプトが失敗しました。再試行してください。",
+  "providerSubscriptionApplyTimeout": "ファイルはアップロードされましたが、処理要求がタイムアウトしました。サーバーの結果を確認してから再試行してください。",
   "providerSubscriptionUploadTimeout": "ノード設定のアップロードがタイムアウトしました。再試行してください。",
   "providerSubscriptionTimeout": "ダウンロードがタイムアウトしました。再試行してください。"
 }

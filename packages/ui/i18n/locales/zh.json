@@ -656,10 +656,12 @@
   "quality": "质量",
   "sortDefault": "默认",
   "providerSubscriptionEditorTitle": "编辑 {name} 的订阅节点",
-  "providerSubscriptionEditorHint": "编辑订阅中的节点。保存后将节点 YAML 上传为 {name}.yaml。",
-  "providerSubscriptionExported": "节点 YAML 已上传",
+  "providerSubscriptionEditorHint": "编辑订阅中的节点。保存后上传 {name}.yaml，并执行服务器处理脚本。",
+  "providerSubscriptionExported": "节点 YAML 已上传并处理",
   "providerSubscriptionNodes": "订阅节点",
   "providerSubscriptionInvalid": "订阅内容必须包含 proxies 节点数组，且每个节点必须是配置对象。",
+  "providerSubscriptionApplyFailed": "文件已上传，但执行处理脚本失败，请重试。",
+  "providerSubscriptionApplyTimeout": "文件已上传，但处理请求超时，请确认服务器处理结果后重试。",
   "providerSubscriptionUploadTimeout": "节点配置上传超时，请重试。",
   "providerSubscriptionTimeout": "订阅下载超时，请重试。"
 }
