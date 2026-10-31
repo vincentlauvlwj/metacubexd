@@ -215,9 +215,17 @@ function aliveCount(group: Pick<ProxyType, 'all'>) {
           </span>
         </span>
         <slot name="navigation-info" :provider-name="group.name" />
-        <span class="hidden truncate text-xs text-base-content/45 sm:block">{{
-          group.now
-        }}</span>
+        <span
+          v-if="!providers"
+          class="hidden min-w-0 items-center gap-1 text-xs text-base-content/45 sm:flex"
+          :title="`${formatProxyType(group.type, t)}${group.now ? ` > ${group.now}` : ''}`"
+        >
+          <span class="shrink-0">{{ formatProxyType(group.type, t) }}</span>
+          <template v-if="group.now">
+            <IconChevronRight :size="12" class="shrink-0" aria-hidden="true" />
+            <span class="truncate">{{ group.now }}</span>
+          </template>
+        </span>
       </button>
     </div>
 
