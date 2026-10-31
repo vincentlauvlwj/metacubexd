@@ -8,6 +8,7 @@ import {
   IconWorld,
   IconX,
 } from '@tabler/icons-vue'
+import { PROXIES_CARD_SIZE_GAP, PROXIES_CARD_SIZE_MIN_WIDTH } from '~/constants'
 import {
   filterNodesByCapability,
   filterNodesByRegion,
@@ -30,7 +31,13 @@ const emit = defineEmits<{
 }>()
 
 const proxiesStore = useProxiesStore()
+const configStore = useConfigStore()
 const { t } = useI18n()
+
+const nodeGridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${PROXIES_CARD_SIZE_MIN_WIDTH[configStore.proxiesCardSize]}px), 1fr))`,
+  gap: `${PROXIES_CARD_SIZE_GAP[configStore.proxiesCardSize]}px`,
+}))
 
 const groupNames = computed(() => props.groups.map((g) => g.name))
 
@@ -130,8 +137,8 @@ function chipClass(active: boolean) {
 
 // On mobile the page scrolls; on desktop only the node list scrolls so the
 // group title and filters remain fixed at the top of the detail pane.
-// The selected row carries data-selected="true" (a fallthrough attr on
-// ProxyNodeListItem's root).
+// The selected card carries data-selected="true" (a fallthrough attr on
+// ProxyNodeCard's root).
 const nodeListEl = ref<HTMLElement | null>(null)
 function scrollSelectedIntoView(behavior: ScrollBehavior = 'smooth') {
   nodeListEl.value
@@ -354,17 +361,19 @@ function aliveCount(group: ProxyType) {
         </div>
       </div>
 
-      <!-- Node list -->
+      <!-- Node cards -->
       <div
         ref="nodeListEl"
         data-testid="master-detail-scroll-container"
-        class="flex flex-col gap-2 px-3 pt-2 pb-3 sm:min-h-0 sm:flex-1 sm:overflow-y-auto"
+        class="grid content-start px-3 pt-2 pb-3 sm:min-h-0 sm:flex-1 sm:overflow-y-auto"
+        :style="nodeGridStyle"
         @scroll.passive="emit('scroll', $event)"
       >
-        <ProxyNodeListItem
+        <ProxyNodeCard
           v-for="name in displayNodes"
           :key="name"
           :proxy-name="name"
+          :group-name="activeGroup.name"
           :test-url="activeGroup.testUrl || null"
           :timeout="activeGroup.timeout ?? null"
           :is-selected="activeGroup.now === name"
@@ -373,7 +382,7 @@ function aliveCount(group: ProxyType) {
         />
         <div
           v-if="displayNodes.length === 0"
-          class="py-8 text-center text-sm text-base-content/40"
+          class="col-span-full py-8 text-center text-sm text-base-content/40"
         >
           {{ t('noData') }}
         </div>
