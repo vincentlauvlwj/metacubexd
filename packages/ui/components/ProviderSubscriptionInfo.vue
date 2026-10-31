@@ -4,9 +4,11 @@ import byteSize from 'byte-size'
 
 interface Props {
   subscriptionInfo?: SubscriptionInfo
+  compact?: boolean
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 
 const total = computed(() => {
   if (!props.subscriptionInfo) return '0 B'
@@ -36,13 +38,25 @@ const percentage = computed(() => {
       <span class="min-w-0 truncate" :title="`${used} / ${total}`"
         >{{ used }} / {{ total }}</span
       >
-      <span class="shrink-0 text-base-content/45">{{ percentage }}%</span>
+      <span v-if="!compact" class="shrink-0 text-base-content/45"
+        >{{ percentage }}%</span
+      >
     </div>
-    <div class="mt-1 h-1 overflow-hidden rounded-full bg-base-content/15">
+    <div
+      v-if="!compact"
+      class="mt-1 h-1 overflow-hidden rounded-full bg-base-content/15"
+    >
       <div
         class="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
         :style="{ width: `${percentage}%` }"
       />
     </div>
+  </div>
+  <div
+    v-else-if="compact"
+    class="w-full truncate text-xs leading-4 text-base-content/45"
+    :title="t('noTrafficInfo')"
+  >
+    {{ t('noTrafficInfo') }}
   </div>
 </template>

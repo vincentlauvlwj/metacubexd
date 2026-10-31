@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Proxy as ProxyType } from '~/types'
+import type { Proxy as ProxyType, ProxyProvider } from '~/types'
 import {
   IconBolt,
   IconChevronRight,
@@ -21,7 +21,8 @@ import {
 } from '~/utils'
 
 interface Props {
-  groups: ProxyType[]
+  groups?: ProxyType[]
+  providers?: ProxyProvider[]
   sortedNamesByGroup: Record<string, string[]>
 }
 
@@ -39,7 +40,23 @@ const nodeGridStyle = computed(() => ({
   gap: `${PROXIES_CARD_SIZE_GAP[configStore.proxiesCardSize]}px`,
 }))
 
-const groupNames = computed(() => props.groups.map((g) => g.name))
+// Providers share the navigation and node workbench, but have no selectable node.
+const groups = computed(() =>
+  props.providers
+    ? props.providers.map((provider) => ({
+        name: provider.name,
+        type: provider.vehicleType,
+        all: provider.proxies.map((node) => node.name),
+        now: '',
+        testUrl: provider.testUrl,
+        timeout: provider.timeout,
+      }))
+    : (props.groups ?? []),
+)
+const activeProvider = computed(() =>
+  props.providers?.find((provider) => provider.name === activeName.value),
+)
+const groupNames = computed(() => groups.value.map((g) => g.name))
 
 const activeName = ref<string | null>(null)
 // Keep active valid as the group list changes (e.g. on refetch).
@@ -48,7 +65,7 @@ watchEffect(() => {
 })
 
 const activeGroup = computed(
-  () => props.groups.find((g) => g.name === activeName.value) ?? null,
+  () => groups.value.find((g) => g.name === activeName.value) ?? null,
 )
 const activeNodes = computed(() =>
   activeGroup.value
@@ -163,7 +180,12 @@ watch(activeName, () => {
 // initial group. Reveal the selected node once the list is mounted.
 onMounted(() => nextTick(() => scrollSelectedIntoView('auto')))
 
-function aliveCount(group: ProxyType) {
+function selectNode(name: string) {
+  const group = props.groups?.find((group) => group.name === activeName.value)
+  if (group && !props.providers) proxiesStore.selectProxyInGroup(group, name)
+}
+
+function aliveCount(group: Pick<ProxyType, 'all'>) {
   return proxiesStore.aliveNodeNames(group.all ?? []).length
 }
 </script>
@@ -192,6 +214,7 @@ function aliveCount(group: ProxyType) {
             {{ aliveCount(group) }}/{{ group.all?.length ?? 0 }}
           </span>
         </span>
+        <slot name="navigation-info" :provider-name="group.name" />
         <span class="hidden truncate text-xs text-base-content/45 sm:block">{{
           group.now
         }}</span>
@@ -207,7 +230,13 @@ function aliveCount(group: ProxyType) {
         data-testid="master-detail-header"
         class="flex shrink-0 flex-col gap-2 rounded-t-xl border-b border-base-content/8 bg-base-200/95 px-3 pt-3 pb-2"
       >
-        <div class="flex min-w-0 items-center gap-2">
+        <slot
+          v-if="activeProvider"
+          name="provider-title"
+          :provider="activeProvider"
+          :sorted-proxy-names="activeNodes"
+        />
+        <div v-else class="flex min-w-0 items-center gap-2">
           <div class="flex min-w-0 flex-1 items-center gap-2">
             <span class="truncate text-lg font-semibold text-base-content">{{
               activeGroup.name
@@ -373,12 +402,13 @@ function aliveCount(group: ProxyType) {
           v-for="name in displayNodes"
           :key="name"
           :proxy-name="name"
-          :group-name="activeGroup.name"
+          :group-name="activeProvider ? undefined : activeGroup.name"
+          :provider-name="activeProvider?.name"
           :test-url="activeGroup.testUrl || null"
           :timeout="activeGroup.timeout ?? null"
           :is-selected="activeGroup.now === name"
           :data-selected="activeGroup.now === name ? 'true' : undefined"
-          @click="proxiesStore.selectProxyInGroup(activeGroup, name)"
+          @click="selectNode(name)"
         />
         <div
           v-if="displayNodes.length === 0"

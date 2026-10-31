@@ -77,6 +77,9 @@ const providerConfigEditor =
   ref<InstanceType<typeof ProviderSubscriptionEditor>>()
 const proxyGroupsWrapper = ref<{ isTwoColumns: boolean }>()
 const providersWrapper = ref<{ isTwoColumns: boolean }>()
+const providerMasterDetail = ref<{
+  scrollToTop: (behavior: ScrollBehavior) => void
+} | null>(null)
 const proxyMasterDetail = ref<{
   scrollToTop: (behavior?: ScrollBehavior) => void
 }>()
@@ -117,7 +120,9 @@ function scrollActiveListToTop() {
     top: 0,
     behavior,
   })
-  proxyMasterDetail.value?.scrollToTop(behavior)
+  if (activeTab.value === 'proxies')
+    proxyMasterDetail.value?.scrollToTop(behavior)
+  else providerMasterDetail.value?.scrollToTop(behavior)
 }
 
 async function scrollToSelectedProxy(proxyGroup: ProxyType) {
@@ -532,7 +537,7 @@ function nodeComponentFor(mode: string) {
   return ProxyNodeCard
 }
 
-// Master-detail is a page-level layout (Proxies tab only), not a per-group
+// Master-detail is a page-level layout for both tabs, not a per-group
 // node renderer, so it gets its own branch in the template.
 const isMasterMode = computed(
   () => configStore.proxiesDisplayMode === PROXIES_DISPLAY_MODE.MASTER,
@@ -636,6 +641,7 @@ const ProxyProviderTitle = defineComponent({
   setup(props) {
     return () =>
       h(ProviderSubscriptionTitle, {
+        hidePreview: isMasterMode.value,
         provider: props.provider,
         sortedProxyNames: props.sortedProxyNames,
         subscriptions: providerSubscriptions,
@@ -680,12 +686,7 @@ const ProviderProxyNodes = defineComponent({
 
     return () => {
       const names = props.sortedProxyNames
-      // Provider tab does not support master-detail; degrade master → list.
-      const providerMode =
-        configStore.proxiesDisplayMode === PROXIES_DISPLAY_MODE.MASTER
-          ? PROXIES_DISPLAY_MODE.LIST
-          : configStore.proxiesDisplayMode
-      const Comp = nodeComponentFor(providerMode)
+      const Comp = nodeComponentFor(configStore.proxiesDisplayMode)
       const children = names.slice(0, renderCount.value).map((proxyName) =>
         h(Comp, {
           key: proxyName,
@@ -755,7 +756,10 @@ const ProviderProxyNodes = defineComponent({
         <ProxiesDisplayModeSwitcher />
         <ProxiesSortSelect />
         <ProxiesCardSizeSelect
-          v-if="configStore.proxiesDisplayMode === PROXIES_DISPLAY_MODE.CARD"
+          v-if="
+            configStore.proxiesDisplayMode === PROXIES_DISPLAY_MODE.CARD ||
+            isMasterMode
+          "
         />
 
         <!-- Collapse / Expand All Groups Button — master-detail has no
@@ -1024,6 +1028,31 @@ const ProviderProxyNodes = defineComponent({
       >
         <span class="text-sm">{{ t('noData') }}</span>
       </div>
+      <ProxyMasterDetail
+        v-else-if="isMasterMode"
+        ref="providerMasterDetail"
+        :providers="proxiesStore.proxyProviders"
+        :sorted-names-by-group="sortedNamesByProvider"
+        @scroll="updateScrollToTopVisibility"
+      >
+        <template #navigation-info="{ providerName }">
+          <ProviderSubscriptionInfo
+            compact
+            :subscription-info="
+              providerSubscriptions.infoByProvider.get(providerName) ??
+              proxiesStore.proxyProviders.find(
+                (provider) => provider.name === providerName,
+              )?.subscriptionInfo
+            "
+          />
+        </template>
+        <template #provider-title="{ provider, sortedProxyNames }">
+          <ProxyProviderTitle
+            :provider="provider"
+            :sorted-proxy-names="sortedProxyNames"
+          />
+        </template>
+      </ProxyMasterDetail>
       <ProxiesRenderWrapper v-else ref="providersWrapper">
         <template v-if="providersWrapper?.isTwoColumns" #even>
           <Collapse

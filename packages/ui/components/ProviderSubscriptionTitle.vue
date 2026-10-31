@@ -13,6 +13,7 @@ import { formatTimeFromNow } from '~/utils'
 
 export default defineComponent({
   props: {
+    hidePreview: { type: Boolean, default: false },
     subscriptions: {
       type: Object as PropType<
         ReturnType<typeof useProxyProviderSubscriptions>
@@ -50,8 +51,7 @@ export default defineComponent({
             h(
               'div',
               {
-                class:
-                  'grid grid-cols-1 items-center gap-y-2 flex-1 min-w-0',
+                class: 'grid grid-cols-1 items-center gap-y-2 flex-1 min-w-0',
               },
               [
                 h(
@@ -185,7 +185,8 @@ export default defineComponent({
                 h('span', `${t('expire')}: ${subscriptionExpiry.value}`),
             ],
           ),
-          !proxiesStore.collapsedMap[props.provider.name] &&
+          !props.hidePreview &&
+            !proxiesStore.collapsedMap[props.provider.name] &&
             h(ProxyNodePreview, {
               proxyNameList: props.sortedProxyNames,
               testUrl: props.provider.testUrl,
