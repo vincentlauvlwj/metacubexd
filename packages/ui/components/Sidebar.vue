@@ -33,6 +33,9 @@ const configStore = useConfigStore()
 const { hasAgent, hasFeature } = useControlInfo()
 const configActions = useConfigActions()
 
+// Fork customization: hide kernel shortcuts and version badges in the sidebar.
+const showSidebarSystemControls = false
+
 const navItems = computed(() => {
   const items = [
     { href: '/overview', name: t('overview'), icon: IconHome },
@@ -495,6 +498,7 @@ async function onRestartCore() {
           />
           <!-- Quick kernel actions (#2048): reload config / restart core -->
           <div
+            v-if="showSidebarSystemControls"
             class="mb-2 hidden flex-col gap-1 lg:flex"
             :class="configStore.sidebarExpanded ? '' : 'items-center'"
           >
@@ -546,7 +550,10 @@ async function onRestartCore() {
             <LangSwitcher />
             <ThemeSwitcher />
           </div>
-          <Versions :collapsed="!configStore.sidebarExpanded" />
+          <Versions
+            v-if="showSidebarSystemControls"
+            :collapsed="!configStore.sidebarExpanded"
+          />
         </div>
       </div>
     </div>
