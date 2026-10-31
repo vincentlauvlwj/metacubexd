@@ -277,6 +277,8 @@
   "ruleUnmatched": "نامطابق",
   "lastMatchedAt": "آخرین تطابق",
   "lastUnmatchedAt": "آخرین عدم تطابق",
+  "noMatchRecord": "هنوز تطابقی ثبت نشده است",
+  "noUnmatchRecord": "هنوز عدم تطابقی ثبت نشده است",
   "columns": "ستون‌ها",
   "sortBy": "مرتب‌سازی بر اساس",
   "sortOverriddenBySearch": "هنگام جستجو بر اساس ارتباط جستجو مرتب می‌شود",

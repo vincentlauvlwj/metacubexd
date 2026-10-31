@@ -277,6 +277,8 @@
   "ruleUnmatched": "不一致",
   "lastMatchedAt": "最終一致",
   "lastUnmatchedAt": "最終不一致",
+  "noMatchRecord": "一致の記録はまだありません",
+  "noUnmatchRecord": "不一致の記録はまだありません",
   "columns": "列",
   "sortBy": "並び替え基準",
   "sortOverriddenBySearch": "検索中は検索の関連度で並び替え",

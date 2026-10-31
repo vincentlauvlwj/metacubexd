@@ -277,6 +277,8 @@
   "ruleUnmatched": "Unmatched",
   "lastMatchedAt": "Last matched",
   "lastUnmatchedAt": "Last unmatched",
+  "noMatchRecord": "No match records yet",
+  "noUnmatchRecord": "No unmatch records yet",
   "columns": "Columns",
   "sortBy": "Sort by",
   "sortOverriddenBySearch": "Sorted by search relevance while searching",

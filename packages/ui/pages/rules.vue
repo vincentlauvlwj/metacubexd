@@ -38,6 +38,18 @@ import {
 } from '~/utils'
 
 const { t, locale } = useI18n()
+
+function formatRuleRecord(
+  count: number | undefined,
+  time: string | undefined,
+  matched: boolean,
+) {
+  if (!(count && count > 0) || !time || !(Date.parse(time) > 0)) {
+    return t(matched ? 'noMatchRecord' : 'noUnmatchRecord')
+  }
+
+  return `${t(matched ? 'lastMatchedAt' : 'lastUnmatchedAt')} ${formatTimeFromNow(time, locale.value)}`
+}
 const router = useRouter()
 
 const configStore = useConfigStore()
@@ -545,21 +557,41 @@ async function openFullEditor() {
                           {{ item.data.extra?.missCount ?? 0 }}
                         </span>
                         <span
-                          v-if="item.data.extra?.hitAt"
+                          v-if="item.data.extra"
                           class="hidden shrink-0 text-[11px] text-base-content/50 md:inline"
-                          :title="`${t('lastMatchedAt')} ${formatTimeFromNow(item.data.extra.hitAt, locale)}`"
+                          :title="
+                            formatRuleRecord(
+                              item.data.extra.hitCount,
+                              item.data.extra.hitAt,
+                              true,
+                            )
+                          "
                         >
-                          {{ t('lastMatchedAt') }}
-                          {{ formatTimeFromNow(item.data.extra.hitAt, locale) }}
+                          {{
+                            formatRuleRecord(
+                              item.data.extra.hitCount,
+                              item.data.extra.hitAt,
+                              true,
+                            )
+                          }}
                         </span>
                         <span
-                          v-if="item.data.extra?.missAt"
+                          v-if="item.data.extra"
                           class="hidden shrink-0 text-[11px] text-base-content/45 lg:inline"
-                          :title="`${t('lastUnmatchedAt')} ${formatTimeFromNow(item.data.extra.missAt, locale)}`"
+                          :title="
+                            formatRuleRecord(
+                              item.data.extra.missCount,
+                              item.data.extra.missAt,
+                              false,
+                            )
+                          "
                         >
-                          {{ t('lastUnmatchedAt') }}
                           {{
-                            formatTimeFromNow(item.data.extra.missAt, locale)
+                            formatRuleRecord(
+                              item.data.extra.missCount,
+                              item.data.extra.missAt,
+                              false,
+                            )
                           }}
                         </span>
                       </div>

@@ -277,6 +277,8 @@
   "ruleUnmatched": "Non correspondant",
   "lastMatchedAt": "Dernière correspondance",
   "lastUnmatchedAt": "Dernière non-correspondance",
+  "noMatchRecord": "Aucune correspondance enregistrée",
+  "noUnmatchRecord": "Aucune non-correspondance enregistrée",
   "columns": "Colonnes",
   "sortBy": "Trier par",
   "sortOverriddenBySearch": "Trié par pertinence de recherche pendant la recherche",

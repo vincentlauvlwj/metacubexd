@@ -277,6 +277,8 @@
   "ruleUnmatched": "일치하지 않음",
   "lastMatchedAt": "마지막 일치",
   "lastUnmatchedAt": "마지막 불일치",
+  "noMatchRecord": "아직 일치 기록 없음",
+  "noUnmatchRecord": "아직 불일치 기록 없음",
   "columns": "열",
   "sortBy": "정렬 기준",
   "sortOverriddenBySearch": "검색 중에는 검색 관련도순으로 정렬됨",

@@ -277,6 +277,8 @@
   "ruleUnmatched": "未命中",
   "lastMatchedAt": "最近命中",
   "lastUnmatchedAt": "最近未命中",
+  "noMatchRecord": "尚无命中记录",
+  "noUnmatchRecord": "尚无未命中记录",
   "columns": "列",
   "sortBy": "排序",
   "sortOverriddenBySearch": "搜索时按相关度排序",
