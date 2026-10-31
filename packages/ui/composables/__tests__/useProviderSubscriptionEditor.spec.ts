@@ -256,7 +256,7 @@ describe('provider subscription node editor', () => {
     completeUpload(new Response(null, { status: 201 }))
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
     expect(fetchMock).toHaveBeenLastCalledWith(
-      'http://clash.home.liuwj.me/proxy/sync',
+      'http://clash.home.liuwj.me/proxy/provider/%E6%9C%BA%E5%9C%BA%20A.yaml',
       expect.objectContaining({
         method: 'POST',
         credentials: 'omit',

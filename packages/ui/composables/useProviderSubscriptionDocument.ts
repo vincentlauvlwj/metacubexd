@@ -5,7 +5,7 @@ import {
   validateDocument,
 } from '@metacubexd/config-editor'
 import { computed, onScopeDispose, ref, shallowRef } from 'vue'
-import { PROVIDER_APPLY_URL, toProviderUploadUrl } from '~/utils/providerUpload'
+import { toProviderUploadUrl } from '~/utils/providerUpload'
 import { prefixNodeRegionFlag } from '~/utils/subscriptionNodeNames'
 import { toSubscriptionProxyUrl } from '~/utils/subscriptionProxy'
 
@@ -118,7 +118,8 @@ export function useProviderSubscriptionDocument(
     let applying = false
     let timeout = setTimeout(() => controller.abort(), 30000)
     try {
-      const response = await fetch(toProviderUploadUrl(getName()), {
+      const providerUrl = toProviderUploadUrl(getName())
+      const response = await fetch(providerUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/yaml; charset=utf-8' },
         body: current.yaml,
@@ -133,7 +134,7 @@ export function useProviderSubscriptionDocument(
       applying = true
       clearTimeout(timeout)
       timeout = setTimeout(() => controller.abort(), 30000)
-      const applied = await fetch(PROVIDER_APPLY_URL, {
+      const applied = await fetch(providerUrl, {
         method: 'POST',
         credentials: 'omit',
         redirect: 'error',
