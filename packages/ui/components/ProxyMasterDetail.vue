@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Proxy as ProxyType, ProxyProvider } from '~/types'
+import type { CSSProperties } from 'vue'
+import type { Proxy as ProxyType } from '~/types'
 import {
   IconBolt,
   IconChevronRight,
@@ -8,7 +9,6 @@ import {
   IconWorld,
   IconX,
 } from '@tabler/icons-vue'
-import { PROXIES_CARD_SIZE_GAP, PROXIES_CARD_SIZE_MIN_WIDTH } from '~/constants'
 import {
   filterNodesByCapability,
   filterNodesByRegion,
@@ -21,9 +21,10 @@ import {
 } from '~/utils'
 
 interface Props {
-  groups?: ProxyType[]
-  providers?: ProxyProvider[]
+  groups: ProxyType[]
   sortedNamesByGroup: Record<string, string[]>
+  nodeListClass?: string
+  nodeListStyle?: CSSProperties
 }
 
 const props = defineProps<Props>()
@@ -32,31 +33,9 @@ const emit = defineEmits<{
 }>()
 
 const proxiesStore = useProxiesStore()
-const configStore = useConfigStore()
 const { t } = useI18n()
 
-const nodeGridStyle = computed(() => ({
-  gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${PROXIES_CARD_SIZE_MIN_WIDTH[configStore.proxiesCardSize]}px), 1fr))`,
-  gap: `${PROXIES_CARD_SIZE_GAP[configStore.proxiesCardSize]}px`,
-}))
-
-// Providers share the navigation and node workbench, but have no selectable node.
-const groups = computed(() =>
-  props.providers
-    ? props.providers.map((provider) => ({
-        name: provider.name,
-        type: provider.vehicleType,
-        all: provider.proxies.map((node) => node.name),
-        now: '',
-        testUrl: provider.testUrl,
-        timeout: provider.timeout,
-      }))
-    : (props.groups ?? []),
-)
-const activeProvider = computed(() =>
-  props.providers?.find((provider) => provider.name === activeName.value),
-)
-const groupNames = computed(() => groups.value.map((g) => g.name))
+const groupNames = computed(() => props.groups.map((g) => g.name))
 
 const activeName = ref<string | null>(null)
 // Keep active valid as the group list changes (e.g. on refetch).
@@ -65,7 +44,7 @@ watchEffect(() => {
 })
 
 const activeGroup = computed(
-  () => groups.value.find((g) => g.name === activeName.value) ?? null,
+  () => props.groups.find((g) => g.name === activeName.value) ?? null,
 )
 const activeNodes = computed(() =>
   activeGroup.value
@@ -154,8 +133,8 @@ function chipClass(active: boolean) {
 
 // On mobile the page scrolls; on desktop only the node list scrolls so the
 // group title and filters remain fixed at the top of the detail pane.
-// The selected card carries data-selected="true" (a fallthrough attr on
-// ProxyNodeCard's root).
+// The selected row carries data-selected="true" (a fallthrough attr on
+// ProxyNodeListItem's root).
 const nodeListEl = ref<HTMLElement | null>(null)
 function scrollSelectedIntoView(behavior: ScrollBehavior = 'smooth') {
   nodeListEl.value
@@ -180,12 +159,7 @@ watch(activeName, () => {
 // initial group. Reveal the selected node once the list is mounted.
 onMounted(() => nextTick(() => scrollSelectedIntoView('auto')))
 
-function selectNode(name: string) {
-  const group = props.groups?.find((group) => group.name === activeName.value)
-  if (group && !props.providers) proxiesStore.selectProxyInGroup(group, name)
-}
-
-function aliveCount(group: Pick<ProxyType, 'all'>) {
+function aliveCount(group: ProxyType) {
   return proxiesStore.aliveNodeNames(group.all ?? []).length
 }
 </script>
@@ -214,18 +188,11 @@ function aliveCount(group: Pick<ProxyType, 'all'>) {
             {{ aliveCount(group) }}/{{ group.all?.length ?? 0 }}
           </span>
         </span>
-        <slot name="navigation-info" :provider-name="group.name" />
-        <span
-          v-if="!providers"
-          class="hidden min-w-0 items-center gap-1 text-xs text-base-content/45 sm:flex"
-          :title="`${formatProxyType(group.type, t)}${group.now ? ` > ${group.now}` : ''}`"
-        >
-          <span class="shrink-0">{{ formatProxyType(group.type, t) }}</span>
-          <template v-if="group.now">
-            <IconChevronRight :size="12" class="shrink-0" aria-hidden="true" />
-            <span class="truncate">{{ group.now }}</span>
-          </template>
-        </span>
+        <slot name="navigation-info" :group="group">
+          <span class="hidden truncate text-xs text-base-content/45 sm:block">{{
+            group.now
+          }}</span>
+        </slot>
       </button>
     </div>
 
@@ -238,13 +205,8 @@ function aliveCount(group: Pick<ProxyType, 'all'>) {
         data-testid="master-detail-header"
         class="flex shrink-0 flex-col gap-2 rounded-t-xl border-b border-base-content/8 bg-base-200/95 px-3 pt-3 pb-2"
       >
-        <slot
-          v-if="activeProvider"
-          name="provider-title"
-          :provider="activeProvider"
-          :sorted-proxy-names="activeNodes"
-        />
-        <div v-else class="flex min-w-0 items-center gap-2">
+        <slot name="title" :group="activeGroup" :nodes="activeNodes" />
+        <div v-if="!$slots.title" class="flex min-w-0 items-center gap-2">
           <div class="flex min-w-0 flex-1 items-center gap-2">
             <span class="truncate text-lg font-semibold text-base-content">{{
               activeGroup.name
@@ -398,32 +360,33 @@ function aliveCount(group: Pick<ProxyType, 'all'>) {
         </div>
       </div>
 
-      <!-- Node cards -->
+      <!-- Node list -->
       <div
         ref="nodeListEl"
         data-testid="master-detail-scroll-container"
-        class="grid content-start px-3 pt-2 pb-3 sm:min-h-0 sm:flex-1 sm:overflow-y-auto"
-        :style="nodeGridStyle"
+        class="px-3 pt-2 pb-3 sm:min-h-0 sm:flex-1 sm:overflow-y-auto"
+        :class="nodeListClass ?? 'flex flex-col gap-2'"
+        :style="nodeListStyle"
         @scroll.passive="emit('scroll', $event)"
       >
-        <ProxyNodeCard
-          v-for="name in displayNodes"
-          :key="name"
-          :proxy-name="name"
-          :group-name="activeProvider ? undefined : activeGroup.name"
-          :provider-name="activeProvider?.name"
-          :test-url="activeGroup.testUrl || null"
-          :timeout="activeGroup.timeout ?? null"
-          :is-selected="activeGroup.now === name"
-          :data-selected="activeGroup.now === name ? 'true' : undefined"
-          @click="selectNode(name)"
-        />
-        <div
-          v-if="displayNodes.length === 0"
-          class="col-span-full py-8 text-center text-sm text-base-content/40"
-        >
-          {{ t('noData') }}
-        </div>
+        <slot name="nodes" :group="activeGroup" :nodes="displayNodes">
+          <ProxyNodeListItem
+            v-for="name in displayNodes"
+            :key="name"
+            :proxy-name="name"
+            :test-url="activeGroup.testUrl || null"
+            :timeout="activeGroup.timeout ?? null"
+            :is-selected="activeGroup.now === name"
+            :data-selected="activeGroup.now === name ? 'true' : undefined"
+            @click="proxiesStore.selectProxyInGroup(activeGroup, name)"
+          />
+          <div
+            v-if="displayNodes.length === 0"
+            class="py-8 text-center text-sm text-base-content/40"
+          >
+            {{ t('noData') }}
+          </div>
+        </slot>
       </div>
     </div>
   </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ProxyConfigEditor from '~/components/ProxyConfigEditor.vue'
+import ProxyEditorField from '~/components/ProxyEditorField.vue'
 import { useProviderSubscriptionEditor } from '~/composables/useProviderSubscriptionEditor'
 
 const { t } = useI18n()
@@ -25,6 +26,7 @@ defineExpose({ open })
   <ProxyConfigEditor
     ref="configEditor"
     :editor="editor"
+    :field-layout="ProxyEditorField"
     :title="t('providerSubscriptionEditorTitle', { name: providerName })"
     :hint="t('providerSubscriptionEditorHint', { name: providerName })"
     :nodes-title="t('providerSubscriptionNodes')"

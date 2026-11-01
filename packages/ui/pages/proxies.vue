@@ -24,9 +24,11 @@ import {
 import byteSize from 'byte-size'
 import Button from '~/components/Button.vue'
 import ConnectivityBoard from '~/components/ConnectivityBoard.vue'
+import ForkProxyMasterDetail from '~/components/ForkProxyMasterDetail.vue'
 import ProviderSubscriptionEditor from '~/components/ProviderSubscriptionEditor.vue'
 import ProviderSubscriptionSettings from '~/components/ProviderSubscriptionSettings.vue'
 import ProviderSubscriptionTitle from '~/components/ProviderSubscriptionTitle.vue'
+import ProxyEditorField from '~/components/ProxyEditorField.vue'
 import ProxyNodeCard from '~/components/ProxyNodeCard.vue'
 import ProxyNodeListItem from '~/components/ProxyNodeListItem.vue'
 import ProxyNodePreview from '~/components/ProxyNodePreview.vue'
@@ -906,7 +908,7 @@ const ProviderProxyNodes = defineComponent({
         <span class="text-sm">{{ t('noData') }}</span>
       </div>
       <template v-else>
-        <ProxyMasterDetail
+        <ForkProxyMasterDetail
           v-if="isMasterMode"
           ref="proxyMasterDetail"
           :groups="renderProxies"
@@ -1028,7 +1030,7 @@ const ProviderProxyNodes = defineComponent({
       >
         <span class="text-sm">{{ t('noData') }}</span>
       </div>
-      <ProxyMasterDetail
+      <ForkProxyMasterDetail
         v-else-if="isMasterMode"
         ref="providerMasterDetail"
         :providers="proxiesStore.proxyProviders"
@@ -1052,7 +1054,7 @@ const ProviderProxyNodes = defineComponent({
             :sorted-proxy-names="sortedProxyNames"
           />
         </template>
-      </ProxyMasterDetail>
+      </ForkProxyMasterDetail>
       <ProxiesRenderWrapper v-else ref="providersWrapper">
         <template v-if="providersWrapper?.isTwoColumns" #even>
           <Collapse
@@ -1344,7 +1346,11 @@ const ProviderProxyNodes = defineComponent({
     </Modal>
 
     <ProviderSubscriptionEditor ref="providerConfigEditor" />
-    <ProxyConfigEditor ref="proxyConfigEditor" @saved="onProxyConfigSaved" />
+    <ProxyConfigEditor
+      ref="proxyConfigEditor"
+      :field-layout="ProxyEditorField"
+      @saved="onProxyConfigSaved"
+    />
   </div>
 </template>
 

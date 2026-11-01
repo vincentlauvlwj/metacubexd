@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ConfigObject, ConfigValue } from '@metacubexd/config-editor'
+import type { Component } from 'vue'
 import {
   IconAlertTriangle,
   IconChevronDown,
@@ -33,6 +34,7 @@ const props = defineProps<{
   nodesOnly?: boolean
   allowRename?: boolean
   retryOnError?: boolean
+  fieldLayout?: Component
 }>()
 const emit = defineEmits<{
   saved: []
@@ -627,16 +629,15 @@ defineExpose({ open })
         {{ t('routingEditorNameLocked') }}
       </p>
       <template v-for="field in resourceFields" :key="field">
-        <label
-          class="grid min-h-8 grid-cols-1 items-center gap-x-4 gap-y-1.5 sm:grid-cols-[10rem_minmax(0,1fr)]"
+        <component
+          :is="fieldLayout ?? 'label'"
+          :class="fieldLayout ? undefined : 'form-control gap-1'"
         >
-          <span class="min-w-0 text-sm font-medium break-words">{{
-            field
-          }}</span>
+          <span class="text-sm font-medium">{{ field }}</span>
           <select
             v-if="field === 'type'"
             :value="resourceDraft[field]"
-            class="select-bordered select w-full min-w-0 select-sm"
+            class="select-bordered select select-sm"
             @change="updateTextField(field, $event)"
           >
             <option
@@ -653,14 +654,14 @@ defineExpose({ open })
             v-else-if="BOOLEAN_ROUTING_FIELDS.has(field)"
             :checked="resourceDraft[field] === true"
             type="checkbox"
-            class="toggle justify-self-start toggle-primary toggle-sm"
+            class="toggle toggle-primary toggle-sm"
             @change="updateBooleanField(field, $event)"
           />
           <input
             v-else-if="NUMBER_ROUTING_FIELDS.has(field)"
             :value="resourceDraft[field]"
             type="number"
-            class="input-bordered input w-full min-w-0 input-sm"
+            class="input-bordered input input-sm"
             @input="updateNumberField(field, $event)"
           />
           <input
@@ -668,10 +669,10 @@ defineExpose({ open })
             :value="resourceDraft[field]"
             :disabled="field === 'name' && editingExisting && !allowRename"
             :type="isSensitiveRoutingField(field) ? 'password' : 'text'"
-            class="input-bordered input w-full min-w-0 input-sm"
+            class="input-bordered input input-sm"
             @input="updateTextField(field, $event)"
           />
-        </label>
+        </component>
       </template>
 
       <template v-if="resourceKind === 'group'">
